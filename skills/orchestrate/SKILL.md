@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Orchestrate substantial work by delegating bounded workstreams to subagents while the main agent owns judgment, coordination, integration, and user collaboration. Picks each subagent's model from three tiers with explicit criteria and keeps every run on one model vendor. Use only when the user explicitly asks for it, by name or by asking for subagents, delegation, parallel agents, fanning out, or orchestration.
+description: Orchestrate substantial work by delegating bounded workstreams to subagents while the main agent owns judgment, coordination, integration, and user collaboration. Picks each subagent's model from three tiers with explicit criteria, using only the models in its model list. Use only when the user explicitly asks for it, by name or by asking for subagents, delegation, parallel agents, fanning out, or orchestration.
 ---
 
 # Orchestrate
@@ -13,7 +13,7 @@ While this skill is active, these rules override your default habits:
 
 1. **Delegate heavy work by default.** Every meaningfully sized workstream goes to a subagent unless you can state, in one sentence, why delegation is worse: a hard sequential dependency on an unfinished result, or coordination cost exceeding the work. "I can do it faster myself" is not a valid reason for heavy work; context isolation and parallelism are the point. Quick one-off actions are yours to do directly (see What you do yourself). Do not spawn an agent to read one file or fix one line.
 2. **Choose every subagent's model on purpose.** Pick a tier with the criteria in Step 2. Set the model on every spawn, except for an agent type whose definition already picks one (see Step 2).
-3. **One vendor per run.** Every subagent runs on the same vendor's models as your own session: Claude subagents from a Claude session, OpenAI subagents from a Codex session. Do not mix them, even when a tool, a CLI on the machine (`codex exec`, `claude -p`, `gemini`), or another skill's configuration offers agents from another vendor.
+3. **Only the listed models.** Every subagent runs on a model from [references/models.md](references/models.md). Do not route work to any other model, even when a tool, a CLI on the machine, or another skill's configuration offers one.
 4. **Launch independent agents in parallel, in a single message.** Serial spawning of independent work is a failure mode. Batch all independent spawn calls into one response so they run concurrently.
 5. **Plan before the first spawn.** Before any agent launches, show the user a short delegation plan (Step 1). Quick reads to inform the plan are fine. No plan and you will drift into doing everything solo.
 
@@ -59,15 +59,7 @@ Rules for the plan:
 
 ## Step 2: Pick the model tier
 
-Subagents use three tiers. Each maps to a model family per vendor. Use the family name; the version changes over time and the spawn tool lists what is current.
-
-| Tier | Claude | OpenAI | Reasoning effort |
-| --- | --- | --- | --- |
-| Light | Haiku | Luna | low |
-| Standard | Sonnet | Terra | medium |
-| Deep | Opus | Sol | high |
-
-The frontier families (Claude Fable, OpenAI Astra) are not a subagent tier. The user chooses them for their own session; use one for a subagent only when the user asks for it on that workstream.
+Subagents use three tiers: **Light**, **Standard**, and **Deep**. [references/models.md](references/models.md) maps each tier to a model and a reasoning effort, and says how to set them on a spawn. Read it before the first spawn.
 
 ### Criteria
 
@@ -101,16 +93,16 @@ Examples: an implementation slice that mirrors an existing one, tests for behavi
 
 ### Caps and adjustments
 
-- **Never above your own session.** A subagent's tier never exceeds the model your session runs on. On a Sonnet or Terra session, Deep work goes to that model, and the plan says so.
+- **Never above your own session.** A subagent's model never exceeds the one your session runs on. When your session runs on a lower tier's model, work above that tier goes to your session's model, and the plan says so.
 - **Upgrade, never downgrade mid-workstream.** When an agent returns weak evidence, misses an ambiguity, or fails, first sharpen its prompt; if the prompt was sound, rerun it one tier up. Do not drop a tier to save cost on a retry.
-- **Missing tier.** If a vendor has no current model in a tier (an older generation is not current), use the tier above it at that tier's reasoning effort.
-- **Reasoning effort.** When the spawn tool exposes effort, set it from the table. Raise Standard to high for a workstream that is close to Deep.
+- **Missing tier.** If a tier has no current model, use the tier above it at that tier's reasoning effort.
+- **Reasoning effort.** When the spawn tool exposes effort, set it from the model list. Raise Standard to high for a workstream that is close to Deep.
 
 ### Setting the model on a spawn
 
-Read the spawn tool's schema for the accepted model values and pick the one in the tier's family. Never invent an identifier or pass a name from another vendor.
+Read the spawn tool's schema for the accepted model values and pick the tier's model from the model list. Never invent an identifier.
 
-Leave the model unset only for an agent type whose definition picks its own: a custom agent with `model:` in its definition (`.claude/agents/*.md`, `~/.claude/agents/*.md`, or the platform's equivalent), or one the user configured. That choice was made on purpose. If you cannot tell whether a type defines a model, set it. Unset otherwise means your session's model, which often skips the tiers entirely.
+Leave the model unset only for an agent type whose definition picks its own, or one the user configured. That choice was made on purpose. If you cannot tell whether a type defines a model, set it. Unset otherwise usually means your session's model, which skips the tiers entirely.
 
 ## Step 3: Launch and keep working
 
@@ -155,4 +147,4 @@ You remain accountable for the outcome even when nearly all supporting work was 
 
 ## Fallback: constrained environments
 
-If the environment has no subagent tool, or spawning is disabled, continue as a single agent, say so briefly, and do not pretend delegation occurred. If the spawn tool has no model parameter, delegate anyway and let the platform choose; Step 2 applies only where a model can be set. Assume subagents cannot spawn their own subagents.
+If the environment has no subagent tool, or spawning is disabled, continue as a single agent, say so briefly, and do not pretend delegation occurred. If the spawn tool has no model parameter, or the model list has none of the models it accepts, delegate anyway and let the platform choose; Step 2 applies only where a listed model can be set. Assume subagents cannot spawn their own subagents.

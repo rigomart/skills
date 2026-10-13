@@ -4,7 +4,7 @@ My agent skills, installable into any repo with the [`skills`](https://github.co
 
 | Skill | What it does |
 | --- | --- |
-| [`orchestrate`](skills/orchestrate/SKILL.md) | Fan work out to subagents: a delegation plan, a model tier per workstream from explicit criteria, one vendor per run, critical integration. |
+| [`orchestrate`](skills/orchestrate/SKILL.md) | Fan work out to subagents: a delegation plan, a model tier per workstream from explicit criteria, critical integration. |
 | [`ship-changes`](skills/ship-changes/SKILL.md) | Branch, commit, push, and open a PR or a stack of PRs in the project's conventions, then land through GitHub auto-merge. |
 | [`validate-idea`](skills/validate-idea/SKILL.md) | Shape a raw product idea into a direction: a draft with stated defaults, a prototype with variants, then an ADR, a spec issue, and slice issues. |
 
