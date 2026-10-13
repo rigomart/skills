@@ -59,7 +59,7 @@ Rules for the plan:
 
 ## Step 2: Pick the model tier
 
-Subagents use three tiers: **Light**, **Standard**, and **Deep**. [references/models.md](references/models.md) maps each tier to a model and a reasoning effort, and says how to set them on a spawn. Read it before the first spawn.
+Subagents use three tiers: **Light**, **Standard**, and **Deep**. [references/models.md](references/models.md) maps each tier to a model and says how to set it on a spawn. Read it before the first spawn.
 
 ### Criteria
 
@@ -95,8 +95,8 @@ Examples: an implementation slice that mirrors an existing one, tests for behavi
 
 - **Never above your own session.** A subagent's model never exceeds the one your session runs on. When your session runs on a lower tier's model, work above that tier goes to your session's model, and the plan says so.
 - **Upgrade, never downgrade mid-workstream.** When an agent returns weak evidence, misses an ambiguity, or fails, first sharpen its prompt; if the prompt was sound, rerun it one tier up. Do not drop a tier to save cost on a retry.
-- **Missing tier.** If a tier has no current model, use the tier above it at that tier's reasoning effort.
-- **Reasoning effort.** When the spawn tool exposes effort, set it from the model list. Raise Standard to high for a workstream that is close to Deep.
+- **Missing tier.** If a tier has no current model, use the tier above it.
+- **Reasoning effort is always high.** Set it on every spawn where the tool allows it, whatever the tier. The tier picks the model; it never lowers the effort.
 
 ### Setting the model on a spawn
 
