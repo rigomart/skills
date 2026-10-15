@@ -1,6 +1,6 @@
 ---
 name: create-verification-skill
-description: Generate a project-local verify-<app> skill that lets any agent prove a user-visible change in the real app with a throwaway end-to-end test against an isolated local instance. Web apps (Playwright) and macOS apps (XCUITest, draft) for now; other surfaces get their own guidance later. Proves with tests, not hand-driven recipes, unlike pstack's skill of the same name. Use for /create-verification-skill, or when a repo has no scripted way to prove a change in the real app.
+description: Generate a project-local verify-<app> skill that lets any agent prove a user-visible change in the real app with a throwaway end-to-end test against an isolated local instance. Web apps (Playwright) and macOS apps (XCUITest, tried on one app) for now; other surfaces get their own guidance later. Proves with tests, not hand-driven recipes, unlike pstack's skill of the same name. Use for /create-verification-skill, or when a repo has no scripted way to prove a change in the real app.
 disable-model-invocation: true
 ---
 
@@ -19,7 +19,7 @@ Find the surface a user actually touches: a web UI, a CLI or TUI, a desktop app,
 | Surface | Guidance |
 | --- | --- |
 | Web app | [references/web.md](references/web.md) |
-| macOS app (AppKit, SwiftUI) | [references/macos.md](references/macos.md) (draft) |
+| macOS app (AppKit, SwiftUI) | [references/macos.md](references/macos.md) (tried once; three items unconfirmed) |
 
 If the primary surface has no row, stop. Report the surface you found and that this skill has no guidance for it yet. Do not improvise one from general knowledge; guidance gets added here after it has been tried on a real project. Guidance marked draft has not been tried yet: follow it, settle each item under its "Confirm on first use" while you build, and before you hand over, correct the guidance file with what you found and drop the draft mark once nothing is left to confirm. A repo with several surfaces gets the one that has guidance, and the generated skill names the others as not covered.
 
