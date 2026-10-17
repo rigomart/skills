@@ -4,6 +4,7 @@ My agent skills, installable into any repo with the [`skills`](https://github.co
 
 | Skill | What it does |
 | --- | --- |
+| [`create-skill`](skills/create-skill/SKILL.md) | Write or revise a skill: check a skill is the right fix, choose invocation, write the description as the trigger, validate with a script, prove it on a cold agent. |
 | [`create-verification-skill`](skills/create-verification-skill/SKILL.md) | Generate a project's `verify-<app>` skill: prove each user-visible change with a throwaway end-to-end test on an isolated instance. Web (Playwright) and macOS (XCUITest, tried on one app) for now. |
 | [`orchestrate`](skills/orchestrate/SKILL.md) | Fan work out to subagents: a delegation plan, the strongest model by default and a cheaper one only by explicit criteria, Claude or OpenAI models, critical integration. |
 | [`ship-changes`](skills/ship-changes/SKILL.md) | Branch, commit, push, and open a PR or a stack of PRs in the project's conventions, then land through GitHub auto-merge. |
