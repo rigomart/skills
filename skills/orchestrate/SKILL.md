@@ -105,4 +105,4 @@ You remain accountable for the outcome even when nearly all supporting work was 
 
 ## Fallback: constrained environments
 
-If the environment has no subagent tool, or spawning is disabled, continue as a single agent, say so briefly, and do not pretend delegation occurred. If the spawn tool has no model parameter, or accepts none of the role models, delegate anyway and let the platform choose, as `model-roles` describes. Assume subagents cannot spawn their own subagents.
+If the environment has no subagent tool, or spawning is disabled, continue as a single agent, say so briefly, and do not pretend delegation occurred. Assume subagents cannot spawn their own subagents.

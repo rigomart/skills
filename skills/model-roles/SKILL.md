@@ -41,12 +41,6 @@ Name each subagent's role in your plan or its prompt before you spawn it.
 - **Only these families.** Fable and Astra, the frontier families, run a subagent only when the user asks for one on that work. Reach the other provider only through a tool built for subagents on it, never by shelling out to a CLI (`codex exec`, `claude -p`).
 - **Effort is high** on every spawn where the tool takes one, whatever the role.
 - **Never above your session.** When your session runs on a mid-size model (Sonnet), roles that call for a larger one run at mid size, in either column, and the plan says so. A small session (Haiku, Luna) runs everything at small size.
-- **Missing model.** When a role's family is not offered, use the next larger one in the same column.
+- **Missing model.** When a role's family is not offered, use the next larger one in the same column. When the spawn tool cannot set a model at all, spawn anyway and say so.
 - **A failed run is reclassified.** When a run fails your check, sharpen the prompt first. When a sound prompt fails twice, the work met another role's criteria: rerun it under that role. A retry never moves to a smaller model.
 - **Agent types that pick their own model.** Leave the model unset for an agent type whose definition sets `model:` (`.claude/agents/*.md`, `~/.claude/agents/*.md`, a plugin's agents) or one the user configured. Set it for every other spawn: unset usually means your session's model, which skips the role.
-
-## Setting it
-
-- **Claude Code `Agent` tool:** `model` takes `haiku`, `sonnet` or `opus`, which resolve to the latest version, and `effort` takes `high`. Check the field's accepted values before the first spawn.
-- **T3 Code `delegate_task`:** call `orchestrator_capabilities` first. Its catalog lists each provider instance and its models; pass the provider instance and the newest model of the role's family, with reasoning effort `high`. This is also the way to the other provider for a Reviewer.
-- **Any other spawn tool:** read its schema for the accepted model values and pick the newest model of the role's family. Never invent an identifier. When the tool has no model parameter, or offers none of these families, spawn anyway, let the platform choose, and say so.
