@@ -7,7 +7,8 @@ My agent skills, installable into any repo with the [`skills`](https://github.co
 | [`create-skill`](skills/create-skill/SKILL.md) | Write or revise a skill: check a skill is the right fix, choose invocation, write the description as the trigger, validate with a script, prove it on a cold agent. |
 | [`create-verification-skill`](skills/create-verification-skill/SKILL.md) | Generate a project's `verify-<app>` skill: prove each user-visible change with a throwaway end-to-end test on an isolated instance. Web (Playwright) and macOS (XCUITest, tried on one app) for now. |
 | [`glossary`](skills/glossary/SKILL.md) | Keep the project's ubiquitous language in `GLOSSARY.md`: seed it from the code and UI, challenge conflicting terms during work, and point every agent at it. |
-| [`orchestrate`](skills/orchestrate/SKILL.md) | Fan work out to subagents: a delegation plan, the strongest model by default and a cheaper one only by explicit criteria, Claude or OpenAI models, critical integration. |
+| [`model-roles`](skills/model-roles/SKILL.md) | Pick a subagent's model by its role (Scout, Checker, Implementer, Engineer, Investigator, Reviewer), from criteria checked before the spawn. |
+| [`orchestrate`](skills/orchestrate/SKILL.md) | Fan work out to subagents: a delegation plan, a role per workstream that sets its model, critical integration. |
 | [`ship-changes`](skills/ship-changes/SKILL.md) | Branch, commit, push, and open a PR or a stack of PRs in the project's conventions, then land through GitHub auto-merge. |
 | [`validate-idea`](skills/validate-idea/SKILL.md) | Shape a raw product idea into a direction: a draft with stated defaults, a prototype with variants, then an ADR, a spec issue, and slice issues. |
 
