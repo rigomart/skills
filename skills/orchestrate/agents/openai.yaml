@@ -1,4 +1,0 @@
-interface:
-  display_name: "Orchestrate"
-  short_description: "Delegate complex work across capable agents"
-  default_prompt: "Use $orchestrate to coordinate this task through capable subagents."
