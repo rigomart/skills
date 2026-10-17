@@ -7,14 +7,14 @@ description: Pick a subagent's model by its role (Runner, Scout, Checker, Implem
 
 Every subagent gets a role before it is spawned, and the role alone sets its model. Decide the role from what the work is, look up the role's model, and set it. When work turns out harder than its role, it was another role all along: move it there.
 
-A command you can run or an edit you can make in a call or two, with the context you already hold, is yours to do: no role, no spawn. A mechanical edit across many files counts as one call when a single command makes it (a word-boundary `sed`, a codemod) and a typecheck or test confirms it.
+A command you can run or an edit you can make in a call or two, with the context you already hold, is yours to do: no role, no spawn. So is a search one `grep` or command answers, and a mechanical edit across many files when a single command makes it (a word-boundary `sed`, a codemod) and a typecheck or test confirms it.
 
 ## Roles
 
 | Role | Use when |
 | --- | --- |
 | Runner | It runs a command given word for word, or copies given fields out of given files or logs, and reports the result verbatim, with nothing to search, choose or summarize. You check it mechanically: the exit code, a rerun, a spot check against the source. Only for output too long or noisy to pull into your own context: a full test suite, a large log. |
-| Scout | It finds, locates, lists or extracts, and the answer is found rather than reasoned out: every call site of a function, the files that import a module. |
+| Scout | It finds what a grep cannot settle: matches you can only judge by reading the code (calls through aliases or dynamic dispatch, writes through an ORM and raw SQL, every place a value flows), over more code than you want in your context. The answer is found, not reasoned out. |
 | Checker | It applies a closed list of rules to given work, and you verify each finding by reading it. |
 | Implementer | It edits, and all of these hold: the spec is complete, an existing pattern shows the way, it stays inside known files, and a test or typecheck shows whether it worked. |
 | Engineer | It edits, and any Implementer condition fails: the spec has gaps or needs nuance, the change crosses modules or touches a contract, schema, auth or stored data, or a mistake is expensive to unwind. |
@@ -24,7 +24,7 @@ A command you can run or an edit you can make in a call or two, with the context
 ## Pick the role
 
 1. **It edits files:** Implementer when every Implementer condition holds, otherwise Engineer. A condition you cannot confirm from the brief or the code counts as failing.
-2. **It only reports:** Runner, Scout, Checker, Investigator or Reviewer, by the table. A search for every instance of something is Scout work, never Runner work: a small model fails by leaving things out, and a list with a gap looks complete.
+2. **It only reports:** Runner, Scout, Checker, Investigator or Reviewer, by the table. A search that needs reading the code is Scout work, never Runner work: a small model fails by leaving things out, and a list with a gap looks complete.
 3. **It fits two roles:** take the one with the larger model.
 4. **It fits no role clearly:** Engineer if it edits, Investigator if it does not.
 5. **It spans two roles** (an unsettled design, then building it): make it two subagents, an Investigator first, then an Implementer or Engineer with the settled result.

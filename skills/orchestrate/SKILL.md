@@ -43,7 +43,7 @@ Before the first spawn, output a compact plan the user can see:
 | Workstream | Agent type | Role | Provider | Wave |
 | --- | --- | --- | --- | --- |
 | e.g. run the full end-to-end suite and report each failing test's name and message verbatim | general-purpose | Runner | session | 1 |
-| e.g. list every call site of the old API | Explore | Scout | session | 1 |
+| e.g. find every place that writes to the orders table, through the ORM and raw SQL | Explore | Scout | session | 1 |
 | e.g. find why sessions drop after a deploy | general-purpose | Investigator | session | 1 |
 | e.g. implement the API slice (`src/api/*` only), mirroring the users slice | general-purpose | Implementer | session | 2 |
 | e.g. migrate the sessions table and its readers | general-purpose | Engineer | session | 2 |
