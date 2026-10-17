@@ -40,13 +40,14 @@ The line is effort and context cost. A bounded chunk of work that needs sustaine
 
 Before the first spawn, output a compact plan the user can see:
 
-| Workstream | Agent type | Role | Wave |
-| --- | --- | --- | --- |
-| e.g. list every call site of the old API | Explore | Scout | 1 |
-| e.g. find why sessions drop after a deploy | general-purpose | Investigator | 1 |
-| e.g. implement the API slice (`src/api/*` only), mirroring the users slice | general-purpose | Implementer | 2 |
-| e.g. migrate the sessions table and its readers | general-purpose | Engineer | 2 |
-| e.g. adversarial security review of the integrated diff | general-purpose | Reviewer | 3 |
+| Workstream | Agent type | Role | Provider | Wave |
+| --- | --- | --- | --- | --- |
+| e.g. run the full end-to-end suite and report each failing test's name and message verbatim | general-purpose | Runner | session | 1 |
+| e.g. list every call site of the old API | Explore | Scout | session | 1 |
+| e.g. find why sessions drop after a deploy | general-purpose | Investigator | session | 1 |
+| e.g. implement the API slice (`src/api/*` only), mirroring the users slice | general-purpose | Implementer | session | 2 |
+| e.g. migrate the sessions table and its readers | general-purpose | Engineer | session | 2 |
+| e.g. adversarial security review of the integrated diff | general-purpose | Reviewer | other | 3 |
 
 Rules for the plan:
 
@@ -54,7 +55,7 @@ Rules for the plan:
 - Group independent workstreams into waves; everything in a wave launches in one message.
 - Name what **you** keep: requirements interpretation, user decisions, integration, verification, final synthesis.
 - 2 to 3 agents for a moderate task, more for genuinely wide work. One agent is almost never a plan.
-- When the session's model caps a role's model (Step 2), say so under the table.
+- When the session's model caps a role's model, or a review cannot go to the other provider (Step 2), say so under the table.
 
 ## Step 2: Give each workstream a role
 
@@ -83,6 +84,8 @@ Give each subagent enough context to work alone, without the full conversation. 
 - whether it may edit or must stay read-only (tell read-only agents so explicitly);
 - the deliverable: evidence, tests, file changes, or a structured summary of concise findings, not raw logs;
 - what it must not decide without escalating to you.
+
+Each review round is a fresh spawn. Its prompt carries the original brief, the earlier findings, the responses to them, and any objection still unresolved.
 
 ## Decision boundaries
 
