@@ -1,6 +1,6 @@
 ---
 name: create-verification-skill
-description: Generate a project-local verify-<app> skill that lets any agent prove a user-visible change in the real app with a throwaway end-to-end test against an isolated local instance. Web apps (Playwright) and macOS apps (XCUITest, tried on one app) for now; other surfaces get their own guidance later. Proves with tests, not hand-driven recipes, unlike pstack's skill of the same name. Use for /create-verification-skill, or when a repo has no scripted way to prove a change in the real app.
+description: Generate a project-local verify-<app> skill that lets any agent prove a user-visible change in the real app with a throwaway end-to-end test against an isolated local instance. Web apps (Playwright) and macOS apps (XCUITest, tried on one app) for now; other surfaces get their own guidance later. Proves with tests, not hand-driven recipes. Use for /create-verification-skill, or when a repo has no scripted way to prove a change in the real app.
 disable-model-invocation: true
 ---
 
