@@ -4,6 +4,7 @@ My agent skills, installable into any repo with the [`skills`](https://github.co
 
 | Skill | What it does |
 | --- | --- |
+| [`comments`](skills/comments/SKILL.md) | Cut a change's comments to the ones that earn their place: a fresh reviewer judges them against a closed keep list, surprises become renames, constraints become checks. |
 | [`create-skill`](skills/create-skill/SKILL.md) | Write or revise a skill: check a skill is the right fix, choose invocation, write the description as the trigger, validate with a script, prove it on a cold agent. |
 | [`create-verification-skill`](skills/create-verification-skill/SKILL.md) | Generate a project's `verify-<app>` skill: prove each user-visible change with a throwaway end-to-end test on an isolated instance. Web (Playwright) and macOS (XCUITest, tried on one app) for now. |
 | [`glossary`](skills/glossary/SKILL.md) | Keep the project's ubiquitous language in `GLOSSARY.md`: seed it from the code and UI, challenge conflicting terms during work, and point every agent at it. |

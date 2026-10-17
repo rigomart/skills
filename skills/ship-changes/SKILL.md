@@ -91,6 +91,8 @@ Open the whole stack before landing any of it. In each PR body, name its place: 
 
 ## Verification
 
+Before committing, run the `comments` skill on the diff if it is installed, alongside any review the project runs before a commit.
+
 Before pushing, run what CI runs: the lint, format, typecheck, build, and test commands from the CI workflows, through the project's package scripts or task runner. Run each one CI runs separately. A build that skips tests does not prove they type-check.
 
 A user-visible change also needs proof in the real app. If the project has a verification skill or documented way to drive the app, use it. Lint and tests don't substitute for it. In a stack, verify each PR at its own head.
@@ -174,7 +176,7 @@ gh pr merge <child-pr> --squash --auto
 1. Read the project's rules, then check branch and worktree state with `git status --short`, `git diff --stat`, and targeted diffs.
 2. Summarize what will ship: one commit or several, one PR or a stack.
 3. Decide whether to keep the current branch or create a descriptive branch from the current worktree `HEAD`.
-4. Run verification. Stage only intended files, commit in the project's style, and push.
+4. Run the `comments` skill and verification. Stage only intended files, commit in the project's style, and push.
 5. Create the PR or the stack with the standard title and body, including the closing issue reference when the work is issue-backed, and link each PR.
 6. If the user asked to land, arm auto-merge as described in Landing.
 7. Final response includes branch, commit hash or hashes, PR link or links, verification status, and whether auto-merge is armed.
