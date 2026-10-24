@@ -1,82 +1,72 @@
-# Web apps: Playwright
+# Web apps: agent-browser
 
-Guidance for a web UI, proven with Playwright Test. It comes from building `verify-vita-os` (a Vite web app and an API with its own database, behind email sign-in), where agent-browser flows were replaced by Playwright specs.
+Guidance for a web UI, driven directly with agent-browser. It comes from `verify-vita-os` (a Vite web app and an API with its own database, behind email sign-in), which went from saved agent-browser flows to Playwright specs and back to agent-browser driven fresh each time. The saved flows failed and the driving did not: fresh agents following the generated skill got all seven verdicts right across three changes, each on a fixed and an unfixed build, plus a re-verify from a feature file, in 3 to 13 minutes each. Two Playwright controls on the same unfixed builds also got them right, in 3 to 5 minutes; most of the extra time went to the tool traps below.
 
-## Framework
+## Driver
 
-- **The repo has Playwright Test.** Reuse its config and fixtures. Add what is missing below rather than starting a parallel setup.
-- **The repo has another end-to-end framework** (Cypress, WebdriverIO, Selenium). Stop and report it: this guidance is written for Playwright, and running two browser stacks means two vocabularies.
-- **The repo has none.** Propose adding `@playwright/test` in its own workspace or directory (`apps/e2e/` in a monorepo, `e2e/` otherwise), with the reason. Use a browser the machine already has (`channel: "chrome"`) or install one (`playwright install chromium`).
-
-## Layout
-
-```text
-e2e/
-  playwright.config.ts
-  src/fixtures.ts      # test, expect, and the fixtures below
-  src/app.ts           # actions specs share: sign-in, create a record, open a dialog
-  src/global-setup.ts  # starts or reuses the instance, when there is a stack CLI
-  tests/*.spec.ts      # committed worked examples
-  scratch/             # throwaway specs that prove a change: gitignored, excluded from typecheck
-```
-
-Add a root script that runs the specs from the workspace (`test:e2e`), so the binary resolves under any package manager's linker. Specs and the generated skill write paths relative to the workspace: `tests/…`, `scratch/…`.
-
-## Config
-
-- `testMatch` covers `tests/` and `scratch/`.
-- Without a stack CLI: `webServer` runs the dev command with `reuseExistingServer`, on a port that is not the developer's usual one. With one: `globalSetup` calls `up`, which starts or reuses the instance, and the instance stays up after the run for fast reruns.
-- `outputDir` and the HTML report go under the instance's directory, so instances do not overwrite each other.
-- `screenshot: "only-on-failure"`, `trace: "retain-on-failure"`, a default desktop `viewport`, and an `actionTimeout` well under the test timeout.
-- `workers: 1` when the data layer cannot take concurrent access from one instance; parallelism then comes from separate instances.
-
-## Fixtures
-
-Give specs these, named for the app:
-
-- **`account`**: a throwaway user per spec file and per `--repeat-each` repeat, created through the app's supported sign-up path. Creating it through the API is arranging a precondition; the sign-in spec proves the form itself.
-- **`page`**, signed in as that user through `storageState`, with `baseURL` set to the instance. To start signed out: `test.use({ storageState: { cookies: [], origins: [] } })`.
-- **`stamp`**: text unique per test, for everything a test creates, so no check can match another test's rows.
-- **`shot(label)`**: saves `<label>.png` to the instance's evidence directory, attaches it to the report, returns the path.
-- **A read-only query** against the instance's database, when the app has one. It accepts only reads and returns typed rows.
-- **`sent(page, path, action)`**, when the app updates optimistically: runs the action, waits for the response to the write it sends to `path`, and asserts it succeeded. A reload comes only after it.
-- **`settled(locator)`**, when panes, drawers or dialogs animate: waits until the element has no running animations (`el.getAnimations().length === 0`).
-
-`src/app.ts` holds the actions more than one spec needs, each returning the locator the next step works in (create a record, then return its pane once its write is confirmed and it stopped moving). Agents copy the surrounding code, so the shared actions set the style.
+- **agent-browser is the driver.** Check `agent-browser --version`. If it is missing, propose installing it; that is the user's call. Its usage guide ships with it: `agent-browser skills get core`. The generated skill points there and does not copy it.
+- **One browser session per instance**: `--session <instance>` on every call, so two agents never share a browser, and `down` closes it.
+- **An existing end-to-end suite** (Playwright, Cypress) belongs to the developer. Leave it alone and do not make verification depend on it. Its specs can show how a feature is reached. Write a test in it only when the developer asks for one.
+- **A Playwright harness built only for an earlier `verify-*` skill**: propose removing it, with what it costs to keep, and leave the decision to the user.
 
 ## Users and test data
 
-Each spec file runs as one user, and its tests run in order, so a later test sees what earlier tests created. When a test fails, Playwright restarts the worker and the rest of the file runs as a new user. So a test does not rely on data an earlier test created, nor on an empty state unless it is the file's first test. Other users share the instance's database: every query is scoped to the test's user.
+Each verification runs as a throwaway user created through the app's supported sign-up path, with a recognizable email (`verify-<stamp>@<app>.test`). If signing up needs something a local instance cannot complete (an emailed link, an invite, a payment step), add a `user` command to the stack CLI that creates one through the supported sign-up API and prints its email and password. The agent then signs in through the form. Creating the user that way arranges a precondition; a change to sign-up itself is proven through the form.
+
+Use a unique stamp in everything a verification creates, so no check can match another run's rows. Other users share the instance's database: every query is scoped to the verification's user. To start signed out, use a new session or `cookies clear`.
 
 ## Driving
 
-- Locate by role and accessible name, label, or visible text: `getByRole("button", { name: "Add", exact: true })`. Use `exact: true` whenever another control's name contains this one.
-- Narrow by chaining from a container (`pane.getByRole(…)`, `getByRole("listitem").filter({ has: … })`), not with XPath. Use CSS only for a stable hook no role reaches, such as a `data-*` attribute. Note in the generated skill whether the app has `data-testid` handles.
-- Wait with web-first assertions: `toBeVisible`, `toBeHidden`, `toHaveCount`, `toHaveValue`, `toHaveURL`. For a fact no locator holds (an order, a URL query, a computed style, focus, a date computed from today), use `expect.poll`. `waitForTimeout` is never proof.
-- After a reload, assert something visible before asserting something hidden, so `toBeHidden` cannot pass on a page that has not rendered.
-- To see what a surface offers, print its accessibility tree: `console.log(await locator.ariaSnapshot())`.
+- **One action, then look.** After each action, take a fresh `snapshot -i` and act on what it shows. Use refs only from the latest snapshot; a guessed or stale ref hits another element. Do not send a long `batch` and rerun it from the top: when a step fails, fix and retry that step.
+- **Check right after the action, not only at the end.** Focus, disabled state and a cleared field can be lost and restored before the final screen, and the end state then looks fine. Read the fact you need straight after the action that should cause it: `eval "document.activeElement.getAttribute('aria-label')"`, `is enabled @e5`, `get value @e5`.
+- **Exact values.** `get text`, `get value`, `get count`, `is visible` and `eval` returning JSON, compared in full. `wait --text` is a substring match and case-sensitive: fine as a wait, never as proof.
+- **Wait on conditions**: `wait @ref`, `wait --text`, `wait --url`, `wait --fn "<expression>"`, `wait <sel> --state hidden`. `wait <ms>` is never proof.
+- **Locate by role and name** from the snapshot (`find role button click --name "Add"`) or by ref. Note in the generated skill whether the app has `data-testid` handles; use CSS only for such a stable hook.
+- **Before waiting for something to go, confirm it was there.** A wait for absence passes on a page that has not rendered, on a selector that never matched, and on a page the browser reset to `about:blank`.
+- **`find … click --name` acts on the first match** and may hit another control with the same name. Prefer a ref from the latest snapshot.
 
-## Failures
+## Writes
 
-A failing assertion prints the line, the locator it waited for, and `error-context.md`: the page's accessibility snapshot at that moment, with the roles and names actually on screen. The generated skill tells the agent to read it before changing anything, and where the screenshot, trace and report land.
+When the app updates optimistically, the screen changes before the server answers. Prove a write in three steps: watch the request (`network requests --filter <path>`) and check that it succeeded, reload and check the screen, and query storage for what the screen cannot show. Writes delayed by an Undo offer or a debounce are not stored until that ends.
+
+A local save can finish in a few milliseconds, so a change about what happens while a write is in flight is not exercised by acting quickly. Slow the network through the page's DevTools connection (`get cdp-url`, then `Network.emulateNetworkConditions` with a latency of a second or more) from a short script outside the repo, and turn it off before reloading, or the reload crawls.
+
+## Evidence
+
+Screenshots go to the instance's evidence directory, named for the step: one right after the action, one after the reload. When the sequence matters (focus, animation, keyboard flow), record it: `record start <path>` then `record stop`. The stack CLI's `env` prints the evidence path.
 
 ## Layouts
 
-Find the widths where the app swaps components, not only styles: a side pane that becomes a drawer, a toolbar that moves to a bottom bar, columns that fold. Each one is a separate path to drive. The generated skill lists them with their widths, which changes get a test at each, and how to tell from the accessibility tree which one is on screen (`complementary "<title>"` against `dialog "<title>"`).
+Find the widths where the app swaps components, not only styles: a side pane that becomes a drawer, a toolbar that moves to a bottom bar, columns that fold. Each one is a separate path to drive, at `set viewport <w> <h>`. The generated skill lists them with their widths, and how to tell from the snapshot which one is on screen (`complementary "<title>"` against `dialog "<title>"`).
+
+## Tool traps
+
+agent-browser behaviors seen in use. Several looked like app behavior at first. Carry the ones you reproduce in this app into the generated skill, and add the ones you hit:
+
+- **`keyboard type` moves focus back into the last-used input** when focus is on the page body. That hides a bug where focus is lost: the typed text still lands, and the stored rows look right. Check `document.activeElement` before typing the next input.
+- **`keyboard type` and `press <letter>` with focus on the page body can get stuck repeating** (tens of thousands of keydowns). `keyup` does not stop it; `reload` does. To type where focus may be lost, use `keyboard inserttext`.
+- **`snapshot -s <selector>` can print a subtree several times** when the selector matches nested elements. Read order and counts from `eval` or storage instead.
+- **`wait --url` without a glob is a prefix match**: `wait --url "http://host/"` passes on any page. Use a glob (`"**/sign-in"`).
+- **`wait --text` sees visible text only**, not labels, placeholders or `aria-label`s. Wait on a ref or a selector for those.
+- **The default viewport is 1280×577**, exactly on a breakpoint at 1280. `set viewport` right after the browser launches does not stick: set it after `open`, and confirm with `eval "innerWidth"`.
+- **`mouse wheel` fires at (0,0)** whatever `mouse move` set (0.38.1), where an overlay or the page edge takes it, so nothing scrolls. `scroll` only sets `scrollTop`, which is not a user gesture. Scroll a container through `get cdp-url` with `Input.synthesizeScrollGesture` (touch) or `Input.dispatchMouseEvent` (wheel) at a point inside it.
+- **`record start` leaves the page hidden** (`document.visibilityState === "hidden"`), even after `record stop`, and transitions stall: a pane never opens, a drawer never mounts. Do not record a step whose timing matters; after recording, check `visibilityState` or relaunch the session.
+- **The session can reset to `about:blank` and lose its sign-in**, most often in a fast loop of actions or with many sessions on one machine. When a step surprises you, check `get url` first, then sign in again and redo the step.
+- **`close` on a session that is not running starts one first**, and a closed session lingers in `session list` for a few seconds. Check the list again before reporting a leak.
+- **Enter did not commit an edit**, and that once became a rule about the app ("never press Enter"). The app sent exactly one write. Before writing a rule about the app, reproduce the behavior a second way: another input method, or the stored rows.
 
 ## Looking around
 
-When a browser tool is available (agent-browser, the platform's own), the generated skill can describe a quick look: start the instance, open its web URL, sign up a throwaway user, look. Looking is not proof, and when a look and a spec disagree about the app, trust the spec. Under a hand-driving tool, a tool bug once looked like an app bug and became a rule about the app.
+Looking is how verification starts on web, so the generated skill needs no separate section for it. Unchecked impressions are not proof: only the checks with exact values are.
 
 ## Gotchas to look for
 
-Check for each of these while building the examples, and record the ones the app has, with the fix:
+Check for each of these while proving the feature files, and record the ones the app has, with the fix:
 
-- **Animations.** Content is on the page before a pane or drawer stops sliding, and a click during the slide lands elsewhere, sometimes outside the drawer, which closes it. `settled` before clicking inside one that just opened.
-- **Overlays.** "… intercepts pointer events": an open pane, dialog or toast covers the target, and the click retries until it times out. Name the overlay and how to close it.
+- **Animations.** Content is on the page before a pane or drawer stops sliding, and a click during the slide lands elsewhere, sometimes outside the drawer, which closes it. Wait until it stops: `wait --fn "document.querySelector('<sel>')?.getAnimations().length === 0"`.
+- **Overlays.** An open pane, dialog or toast covers the target and the click lands on it. Name the overlay and how to close it.
 - **Lazy loading.** Editors and heavy widgets load after the page; wait for the control itself, not the page.
-- **Delayed writes.** An Undo offer or debounce delays a write; wait for it to end before a reload or a query.
 - **Toasts.** Transient, and an earlier one with the same text may still be up. Never the only proof of a write.
 - **Origins.** CORS allowing exactly one origin (`localhost` versus `127.0.0.1`).
 - **Auth.** Social sign-in buttons with no local credentials; do not click them.
-- **Dates.** Tests computing "today" can fail across midnight or at month edges; pick dates relative to today.
+- **Dates.** "Today" changes across midnight and month edges; pick dates relative to today.

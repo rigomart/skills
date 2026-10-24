@@ -1,8 +1,8 @@
 # macOS apps: XCUITest
 
-Guidance for a native macOS app (AppKit, SwiftUI, or both), proven with XCUITest and run through `xcodebuild`.
+Guidance for a native macOS app (AppKit, SwiftUI, or both), proven with XCUITest and run through `xcodebuild`. No direct driver has been tried on macOS, so the agent proves each change with a throwaway test in `Scratch/`, copying from 1 to 3 committed example tests, and runs the checks of the feature files the same way.
 
-**Where this comes from.** First followed on Aside (2026-10): an `LSUIElement` menu bar app with a non-activating `NSPanel` hosting SwiftUI, a Carbon global hotkey (KeyboardShortcuts), a URL scheme, an XcodeGen project, Xcode 27, macOS 26.6, two displays. A fresh agent then followed the generated skill cold and passed. Items marked *(seen)* were observed there; the rest still carry over from [web.md](web.md). The few claims nobody has checked are under "Still unconfirmed" at the end.
+**Where this comes from.** First followed on Aside (2026-10): an `LSUIElement` menu bar app with a non-activating `NSPanel` hosting SwiftUI, a Carbon global hotkey (KeyboardShortcuts), a URL scheme, an XcodeGen project, Xcode 27, macOS 26.6, two displays. A fresh agent then followed the generated skill cold and passed. Items marked *(seen)* were observed there; the rest carry over from the web guidance as it stood when it used Playwright. The few claims nobody has checked are under "Still unconfirmed" at the end.
 
 ## Framework
 
