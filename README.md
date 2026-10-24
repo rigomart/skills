@@ -6,7 +6,7 @@ My agent skills, installable into any repo with the [`skills`](https://github.co
 | --- | --- |
 | [`comments`](skills/comments/SKILL.md) | Cut a change's comments to the ones that earn their place: a fresh checker judges them against a closed keep list, surprises become renames, constraints become checks. |
 | [`create-skill`](skills/create-skill/SKILL.md) | Write or revise a skill: check a skill is the right fix, choose invocation, write the description as the trigger, validate with a script, prove it on a cold agent. |
-| [`create-verification-skill`](skills/create-verification-skill/SKILL.md) | Generate a project's `verify-<app>` skill: prove each user-visible change with a throwaway end-to-end test on an isolated instance. Web (Playwright) and macOS (XCUITest, tried on one app) for now. |
+| [`create-verification-skill`](skills/create-verification-skill/SKILL.md) | Generate a project's `verify-<app>` skill: prove each user-visible change in the real app on an isolated instance, with exact checks and one file per feature saying what to prove. Web (agent-browser) and macOS (XCUITest, tried on one app) for now. |
 | [`glossary`](skills/glossary/SKILL.md) | Keep the project's ubiquitous language in `GLOSSARY.md`: seed it from the code and UI, challenge conflicting terms during work, and point every agent at it. |
 | [`model-roles`](skills/model-roles/SKILL.md) | Pick a subagent's model by its role (Runner, Scout, Checker, Implementer, Engineer, Investigator, Reviewer), from criteria checked before the spawn, on Claude or OpenAI models. |
 | [`orchestrate`](skills/orchestrate/SKILL.md) | Fan work out to subagents: a delegation plan, a role per workstream that sets its model, critical integration. |
