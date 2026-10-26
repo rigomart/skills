@@ -47,6 +47,8 @@ git rev-parse --show-toplevel
 
 When working in a worktree, do not assume the branch should be based on `main`. Treat the checked-out worktree branch as the base unless the user explicitly asks to rebase, retarget, or start over from `main`.
 
+Part of the branch may already have landed through a squash merge, which `git log origin/main..HEAD` still lists. Check each commit ahead of `main` with `gh pr list --state merged --search <sha>`. When the lower ones already merged, put only the rest on a new descriptive branch from `origin/main` with `git rebase --onto origin/main <last-merged-sha> <new-branch>`, and leave the worktree's branch as it is.
+
 If the current branch is already a descriptive feature branch for the work being shipped, keep using it. If the current branch is `main`, `master`, a branch an agent tool named for itself (`codex/*`, `codex-*`, `t3code/*`, `claude/*`), or a generic branch name, create a new descriptive branch from the current `HEAD`:
 
 ```bash
