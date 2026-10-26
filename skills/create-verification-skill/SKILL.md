@@ -77,7 +77,7 @@ Write `verify-<app>/SKILL.md` where the project keeps skills, with frontmatter (
 - **What proof is.** One paragraph: driving the change on an isolated instance and checking exact values, the feature files as the list of what to prove, the two or three commands.
 - **Isolation.** Instance names, what each owns, never driving an instance the skill did not start.
 - **Users and test data.** How to get a throwaway user, what may and may not be assumed about data, how to start signed out.
-- **Prove a change.** The loop: start the instance; read the feature files the change touches; drive the new behavior on every entry point and variant it touched; rerun the checks of each touched feature; update those feature files when the behavior changed; report; tear down.
+- **Prove a change.** The loop: start the instance; read the feature files the change touches; drive the new behavior on every entry point and variant it touched; rerun the checks of each touched feature; take the PR images when the change is visible; update those feature files when the behavior changed; report; tear down.
 - **Re-verify a feature.** The whole run, not only the checks: start the instance, get a user, set the viewport for each variant, drive every check in the feature's file on each listed entry point and variant, report each check by number, tear down.
 - **Driving.** How to locate, wait and check in this app, from the surface guidance, with one short worked example from this app that the agent can follow as written.
 - **Proof standards.** Below, adapted to the app.
@@ -94,6 +94,7 @@ Carry these into the generated skill, in the app's own terms:
 - Query storage only for what the screen cannot show: no duplicates, an exact stored value, a real deletion, an entry no screen lists. Scope each query to the verification's own user and compare exact rows, never a substring. Do not restate in a query what the reloaded screen shows; storage changes more often than the screen.
 - Drive every path the change touched: each entry point, and each layout or variant built from different components. Name any path changed but not driven.
 - The report carries what was driven, since none of it is in the diff: each check by number or by what it proved, the entry points and variants, the exact values observed, and the screenshots.
+- A change a user can see gets PR images, which the pull request attaches: one per changed state and per variant, cropped to the change and named for it (`<feature>-<state>-<variant>.png`). When the change alters an existing screen, add a before image of the same state, taken with the change's files reverted in the working tree and restored afterwards, the tree confirmed clean. The report lists the PR images apart from the rest of the evidence, each with one line saying what it proves, so whoever opens the PR attaches those and no others.
 - An entry point that cannot be reached is reported with the attempted step and the unmet precondition, never as verified through a different path.
 - A check that could not run is `INCONCLUSIVE`, never a pass.
 - If the same step fails twice, stop that item, report it `INCONCLUSIVE` with the failing step and its output, and move on.
@@ -103,7 +104,7 @@ Carry these into the generated skill, in the app's own terms:
 
 A generated skill that was never followed is a draft. Hand it to a fresh agent with no context beyond the repo and a small real verification task ("prove that X shows Y after Z"), and watch where it stumbles: a missing step, a wrong handle, an unclear rule. Fix the skill, not the agent's run. If you cannot spawn an agent, follow the skill yourself from a new shell, exactly as written, and say so.
 
-The run must cover: start the instance, check its health, drive the checks of one feature file, capture evidence, tear down, and confirm the evidence still exists afterwards. Run the cleanup after every failed attempt too, so broken runs do not strand processes and ports. If you proved it in a stand-in for the real target, list every setup step the stand-in did that the target will not.
+The run must cover: start the instance, check its health, drive the checks of one feature file, capture evidence and the PR images, tear down, and confirm the evidence still exists afterwards. Run the cleanup after every failed attempt too, so broken runs do not strand processes and ports. If you proved it in a stand-in for the real target, list every setup step the stand-in did that the target will not.
 
 ## 8. Wire it in and hand over
 

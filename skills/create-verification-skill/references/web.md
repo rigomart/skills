@@ -35,6 +35,8 @@ A local save can finish in a few milliseconds, so a change about what happens wh
 
 Screenshots go to the instance's evidence directory, named for the step: one right after the action, one after the reload. When the sequence matters (focus, animation, keyboard flow), record it: `record start <path>` then `record stop`. The stack CLI's `env` prints the evidence path.
 
+For a PR image, set the variant's viewport first, then crop to the changed element with `screenshot <selector> <path>`. Use the full viewport only when the change is the page layout itself. Wait for animations to stop before the shot, or it catches a pane mid-slide.
+
 ## Layouts
 
 Find the widths where the app swaps components, not only styles: a side pane that becomes a drawer, a toolbar that moves to a bottom bar, columns that fold. Each one is a separate path to drive, at `set viewport <w> <h>`. The generated skill lists them with their widths, and how to tell from the snapshot which one is on screen (`complementary "<title>"` against `dialog "<title>"`).

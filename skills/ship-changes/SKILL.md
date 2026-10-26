@@ -125,10 +125,36 @@ One to three sentences: what this touches, what could go wrong, and how it would
 - The CI commands you ran locally
 - How the change was driven in the real app, and what it showed
 
+## Screenshots
+| Before | After |
+| --- | --- |
+| ![Inbox badge shows 3 after archiving one of 3](./.verify/main/evidence/inbox-badge-before.png) | ![Inbox badge shows 2 after archiving one of 3](./.verify/main/evidence/inbox-badge-after.png) |
+
 Closes #123
 ```
 
-`Blast radius` and `Tradeoffs` are where compromises go, including any the project's agent instructions ask you to surface. Don't write `## Summary` or `## Test plan` boilerplate, file-by-file lists, or SHAs. If a command was not run, say why instead of listing it. Attach screenshots or recordings when they prove a claim.
+`Blast radius` and `Tradeoffs` are where compromises go, including any the project's agent instructions ask you to surface. Don't write `## Summary` or `## Test plan` boilerplate, file-by-file lists, or SHAs. If a command was not run, say why instead of listing it.
+
+### Screenshots
+
+A change a user can see carries images in its PR: UI, layout, styling, copy, icons, an app's or a TUI's screens. CLI output goes in a text block of the real output instead, which a reviewer can search and diff.
+
+- **Take them from the verification run** at the PR's head. When the project's verification skill names the images meant for the PR, use those. When it names none, or there is no such skill, take them while driving the change: one per changed state and per variant (width, theme), cropped to the change. When the change alters an existing screen, add a before image of the same state: revert the change's files in the working tree (`git checkout origin/<base> -- <files>`), take it, restore them (`git checkout HEAD -- <files>`), and confirm `git status` is clean. A recording replaces stills when the sequence is the change (focus moving, an animation).
+- **Look at each image before attaching it.** Attaching publishes it. It shows the app with throwaway data only, nothing from the developer's own account or the rest of their screen.
+- **Alt text says what the image proves**, not what it is: `Inbox badge shows 2 after archiving one of 3`, not `screenshot`.
+- **Attach with `gh`.** `gh pr create`, `gh pr edit` and `gh pr comment` take `--attach <file>`, up to 50 per command. Run the command from the repo root, and reference each file in the body by exactly the path you pass to `--attach` (`./.verify/…`); the body file itself can live anywhere. `gh` uploads each file and rewrites the reference to the hosted asset. An attached file the body does not reference is appended to the end.
+
+  ```bash
+  gh pr create --title "..." --body-file body.md \
+    --attach ./.verify/main/evidence/inbox-badge-before.png \
+    --attach ./.verify/main/evidence/inbox-badge-after.png
+  ```
+
+  If some uploads fail, `gh` still creates the PR with the rest and exits non-zero; reattach the missing ones with `gh pr edit <pr> --attach`.
+- **Keep them current.** When a later push changes what the screen shows, retake the images and replace the body with `gh pr edit <pr> --body-file body.md --attach …`, so the PR never shows a stale state.
+- **No `--attach`** in `gh <cmd> --help` means an older `gh`. Propose upgrading it; that is the user's call. Until then, open the PR without the section and tell the user which images to drag into it.
+
+In a stack, each PR attaches the images from its own head.
 
 The PR body must reference the issue it closes when the work is tied to an issue. Look for the issue number in the session context, the user's request, branch name, commit messages, recent issue discussion, or the diff itself.
 
@@ -177,6 +203,6 @@ gh pr merge <child-pr> --squash --auto
 2. Summarize what will ship: one commit or several, one PR or a stack.
 3. Decide whether to keep the current branch or create a descriptive branch from the current worktree `HEAD`.
 4. Run the `comments` skill and verification. Stage only intended files, commit in the project's style, and push.
-5. Create the PR or the stack with the standard title and body, including the closing issue reference when the work is issue-backed, and link each PR.
+5. Create the PR or the stack with the standard title and body, attaching the screenshots when the change is visible and including the closing issue reference when the work is issue-backed, and link each PR.
 6. If the user asked to land, arm auto-merge as described in Landing.
-7. Final response includes branch, commit hash or hashes, PR link or links, verification status, and whether auto-merge is armed.
+7. Final response includes branch, commit hash or hashes, PR link or links, verification status, the images attached or why there are none for a visible change, and whether auto-merge is armed.
