@@ -10,7 +10,7 @@ My agent skills, installable into any repo with the [`skills`](https://github.co
 | [`glossary`](skills/glossary/SKILL.md) | Keep the project's ubiquitous language in `GLOSSARY.md`: seed it from the code and UI, challenge conflicting terms during work, and point every agent at it. |
 | [`model-roles`](skills/model-roles/SKILL.md) | Pick a subagent's model by its role (Runner, Scout, Checker, Implementer, Engineer, Investigator, Reviewer), from criteria checked before the spawn, on Claude or OpenAI models. |
 | [`orchestrate`](skills/orchestrate/SKILL.md) | Fan work out to subagents: a delegation plan, a role per workstream that sets its model, critical integration. |
-| [`ship-changes`](skills/ship-changes/SKILL.md) | Branch, commit, push, and open a PR or a stack of PRs in the project's conventions, then land through GitHub auto-merge. |
+| [`ship-changes`](skills/ship-changes/SKILL.md) | Branch, commit, push, and open a PR or a stack of PRs in the project's conventions, with screenshots attached through `gh` for visible changes, then land through GitHub auto-merge. |
 | [`validate-idea`](skills/validate-idea/SKILL.md) | Shape a raw product idea into a direction: a draft with stated defaults, a prototype with variants, then an ADR, a spec issue, and slice issues. |
 
 ## Install
