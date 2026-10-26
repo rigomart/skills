@@ -108,17 +108,17 @@ Use a conventional PR title matching the main commit or the overall change.
 feat(items): add inline item editing
 ```
 
-The body is a briefing for a reviewer who has the diff. The title's type picks its template from [references/pr-templates.md](references/pr-templates.md); open it before writing the body. When the project doesn't use Conventional Commits, use the type the change would get under them. A change that mixes types takes the title's type, which already names the main change.
+The body is a briefing for a reviewer who has the diff. The title's type picks its template; open that file before writing the body. When the project doesn't use Conventional Commits, use the type the change would get under them. A change that mixes types takes the title's type, which already names the main change.
 
 | Title type | Template |
 | --- | --- |
-| `feat`, or a type not listed | Feature |
-| `fix` | Fix |
-| `refactor` | Refactor |
-| `perf` | Performance |
-| `docs` | Docs |
-| `chore`, `ci`, `build`, `test`, `style` | Maintenance |
-| `revert` | Revert |
+| `feat`, or a type not listed | [feature.md](references/pr-templates/feature.md) |
+| `fix` | [fix.md](references/pr-templates/fix.md) |
+| `refactor` | [refactor.md](references/pr-templates/refactor.md) |
+| `perf` | [performance.md](references/pr-templates/performance.md) |
+| `docs` | [docs.md](references/pr-templates/docs.md) |
+| `chore`, `ci`, `build`, `test`, `style` | [maintenance.md](references/pr-templates/maintenance.md) |
+| `revert` | [revert.md](references/pr-templates/revert.md) |
 
 When the project has its own PR template, its headings replace these; fill them with what the type's template asks for.
 
