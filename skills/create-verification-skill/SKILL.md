@@ -1,6 +1,6 @@
 ---
 name: create-verification-skill
-description: Generate a project-local verify-<app> skill that lets any agent prove a user-visible change in the real app, against an isolated local instance, with exact checks and one file per feature saying what to prove. Web apps (driven with agent-browser) and macOS apps (XCUITest, tried on one app) for now; other surfaces get their own guidance later. Use for /create-verification-skill, or when a repo has no reliable way to prove a change in the real app.
+description: Generate a project's verify-<app> skill so agents can prove changes in the real app. Web and macOS apps for now.
 disable-model-invocation: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: ship-changes
-description: Packages current repository changes into a branch, commit or commits, push, and pull request using the project's conventions, splits work into a stack of PRs when it has natural seams, and lands PRs or stacks through GitHub auto-merge. Use when the user asks to ship changes, create a branch, commit, push, open a PR or a stack, merge or land a PR, or prepare work for review.
+description: Branch, commit, push and open a PR or a stack in the project's conventions, then land it. Use when asked to ship, commit, push, open or land a PR, or prepare work for review.
 ---
 
 # Ship Changes

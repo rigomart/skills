@@ -1,6 +1,6 @@
 ---
 name: model-roles
-description: Pick a subagent's model by its role (Runner, Scout, Checker, Implementer, Engineer, Investigator, Reviewer), decided from criteria checked before the spawn, on Claude or OpenAI models. Use when spawning a subagent or delegating work, or when a skill names one of these roles.
+description: Pick a subagent's model by its role. Use when spawning a subagent or delegating work, or when a skill names a role (Runner, Scout, Checker, Implementer, Engineer, Investigator, Reviewer).
 ---
 
 # Model roles

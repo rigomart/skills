@@ -1,6 +1,6 @@
 ---
 name: comments
-description: Cut the comments a change adds or edits down to the ones that earn their place, and make those short. A fresh subagent that did not write them checks the diff against a closed keep list; you apply its findings, turn surprises in our own code into renames or extractions, and offer to encode true constraint comments as types, tests or checks. Use before committing or opening a PR, when asked to review, trim or clean up comments, or when a diff carries narration, banners or commented-out code.
+description: Cut a change's comments to the few that earn their place, judged by a fresh subagent. Use before committing or opening a PR, or when asked to review, trim or clean up comments.
 ---
 
 # Comments

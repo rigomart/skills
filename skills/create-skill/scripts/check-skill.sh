@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Check skill folders: frontmatter, name, description, and relative Markdown links.
+# Check skill folders: frontmatter, name, description and its length, and relative Markdown links.
 # Usage: check-skill.sh <skill-dir> [<skill-dir>...]
 # Prints one FAIL line per problem and exits 1 if any were found.
 
@@ -64,6 +64,9 @@ for dir in "$@"; do
         \"* | \'* | \>* | \|*) ;;
         *': '*) fail "$file" "unquoted description contains ': '; quote it or use >-" ;;
       esac
+      if [ ${#desc} -gt 250 ]; then
+        fail "$file" "description is ${#desc} characters; keep it under 250"
+      fi
     fi
   fi
 

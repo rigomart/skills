@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Orchestrate substantial work by delegating bounded workstreams to subagents while the main agent owns judgment, coordination, integration, and user collaboration. Gives each subagent a role, which sets its model, through the model-roles skill. Use only when the user explicitly asks for it, by name or by asking for subagents, delegation, parallel agents, fanning out, or orchestration, or when another skill routes work to it.
+description: Fan substantial work out to subagents while you keep the judgment and integration. Use only when the user asks for subagents, delegation, parallel agents or orchestration, or when another skill routes work to it.
 ---
 
 # Orchestrate
