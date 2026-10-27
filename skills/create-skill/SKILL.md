@@ -31,7 +31,7 @@ Ask the user only what you cannot read or run, each question with your default. 
 - **Model-invoked** (omit `disable-model-invocation`): the agent reaches for it on its own, or another skill must reach it. Its description sits in context on every turn, so it pays for itself only if the agent would usefully fire it unprompted.
 - **User-invoked** (`disable-model-invocation: true`): fires only when a human types its name, and no other skill can call it. Use it for generators, setup and heavy runs a person should start. Its description is a one-line summary for a person browsing commands.
 
-The description is the trigger: the agent reads it to decide whether to open the skill, so a "when to use" section in the body never fires. For a model-invoked skill, say what it does in a sentence, then `Use when` and one trigger per distinct case, led by the word people actually type. Synonyms for one case are one trigger. Leave out what the body says. `name` is kebab-case and matches the folder.
+The description is the trigger: the agent reads it to decide whether to open the skill, so a "when to use" section in the body never fires. For a model-invoked skill, say what it does in a sentence, then `Use when` and one trigger per distinct case, led by the word people actually type. Synonyms for one case are one trigger. Keep it to two short sentences, under 250 characters; how the skill works belongs in the body. `name` is kebab-case and matches the folder.
 
 ## 4. Lay out the body
 
@@ -56,7 +56,7 @@ The description is the trigger: the agent reads it to decide whether to open the
 
 ## 6. Validate
 
-Run [scripts/check-skill.sh](scripts/check-skill.sh) on every skill folder you touched (`bash <path>/check-skill.sh skills/foo skills/bar`) and fix every `FAIL` line it prints. It checks frontmatter, `name`, `description` and relative links. Check by hand what it does not: every skill the text names exists, and every command and script runs from where the skill says to run it.
+Run [scripts/check-skill.sh](scripts/check-skill.sh) on every skill folder you touched (`bash <path>/check-skill.sh skills/foo skills/bar`) and fix every `FAIL` line it prints. It checks frontmatter, `name`, `description` and its length, and relative links. Check by hand what it does not: every skill the text names exists, and every command and script runs from where the skill says to run it.
 
 ## 7. Prove it cold
 
