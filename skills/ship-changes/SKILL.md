@@ -79,6 +79,8 @@ Before pushing, run what CI runs: the lint, format, typecheck, build, and test c
 
 A user-visible change also needs proof in the real app. If the project has a verification skill or documented way to drive the app, use it. Lint and tests don't substitute for it.
 
+When the work already saved evidence (an `evidence.md` and its artifacts, under `.evidence/` or the verification skill's folder), build the PR from it: its images go in Screenshots, its numbers in Measurements, its repro in Verification. Retake an image only when a later commit changed what it shows.
+
 ## PR Format
 
 Use a conventional PR title matching the main commit or the overall change.

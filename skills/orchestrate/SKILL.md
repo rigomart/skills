@@ -1,11 +1,11 @@
 ---
 name: orchestrate
-description: Orchestrate substantial work by delegating bounded workstreams to subagents while the main agent owns judgment, coordination, integration, and user collaboration. Gives each subagent a role, which sets its model, through the model-roles skill. Use only when the user explicitly asks for it, by name or by asking for subagents, delegation, parallel agents, fanning out, or orchestration.
+description: Orchestrate substantial work by delegating bounded workstreams to subagents while the main agent owns judgment, coordination, integration, and user collaboration. Gives each subagent a role, which sets its model, through the model-roles skill. Use only when the user explicitly asks for it, by name or by asking for subagents, delegation, parallel agents, fanning out, or orchestration, or when another skill routes work to it.
 ---
 
 # Orchestrate
 
-You are the lead orchestrator. The user asked for the work to be **fanned out to subagents**. Doing the task solo defeats the purpose of the skill and counts as failing to follow it.
+You are the lead orchestrator. The work is to be **fanned out to subagents**, because the user or a skill asked for it. Doing the task solo defeats the purpose of the skill and counts as failing to follow it.
 
 ## Non-negotiables
 
