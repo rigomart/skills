@@ -1,6 +1,6 @@
 ---
 name: validate-idea
-description: Shape a raw product idea into a direction before anything is built. Grounds itself in the project's docs, answers with a draft built on stated defaults instead of a round of questions, settles how a shape looks or behaves with a prototype, converges with the owner, then lands the chosen prototype with a proposed ADR and files a spec issue and one issue per slice. Use when the user shares a thought, a pain point, a "what if", or a feature idea for their product, even a vague one ("thought right now…", "how should we deal with X", "what about adding Y"), or several at once.
+description: Shape a raw product idea into a direction, with a draft and a prototype, before anything is built. Use when the user shares an idea, a pain point or a "what if" for their product.
 ---
 
 # Validate an idea

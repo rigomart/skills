@@ -1,6 +1,6 @@
 ---
 name: create-skill
-description: Write or revise an agent skill so a cold agent follows it the same way every run, and prove it with a fresh agent before handing it over. Use when creating a skill, substantially editing one, tuning a description that does not fire, or turning a repeated correction or workflow into a skill.
+description: Write or revise a skill and prove it on a fresh agent. Use when creating or substantially editing a skill, fixing a description that doesn't fire, or turning a repeated correction into a skill.
 ---
 
 # Create a skill

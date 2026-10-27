@@ -1,6 +1,6 @@
 ---
 name: glossary
-description: Keep a project's ubiquitous language in GLOSSARY.md, one name per concept, shared by the people and agents who work on it. Seeds a glossary from the code, UI copy, docs and issues when none exists, challenges fuzzy or conflicting terms during work and records each settled term as it happens, and wires one line into AGENTS.md so every agent reads it. Use when naming a new concept, when one concept has two names or one word means two things, when discussing a project's terminology or ubiquitous language, or when creating or editing GLOSSARY.md.
+description: Keep a project's terminology in GLOSSARY.md, one name per concept. Use when naming a new concept, when two names mean one thing or one word means two, or when editing GLOSSARY.md.
 ---
 
 # Glossary
