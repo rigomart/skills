@@ -11,6 +11,7 @@ My agent skills, installable into any repo with the [`skills`](https://github.co
 | [`implement`](skills/implement/SKILL.md) | Take a feature, fix, refactor or perf change from an idea, file or issue to done: decide instead of asking, prove it with before and after evidence. |
 | [`model-roles`](skills/model-roles/SKILL.md) | Pick a subagent's model by its role (Runner, Scout, Checker, Implementer, Engineer, Investigator, Reviewer), from criteria checked before the spawn, on Claude or OpenAI models. |
 | [`orchestrate`](skills/orchestrate/SKILL.md) | Fan work out to subagents: a delegation plan, a role per workstream that sets its model, critical integration. |
+| [`review-skill`](skills/review-skill/SKILL.md) | Review a skill from its text, its overlap with other skills, and past Claude Code, Codex and Cursor sessions that used it or did its work without it, then propose what to keep, generalize, move or cut. |
 | [`ship-changes`](skills/ship-changes/SKILL.md) | Branch, commit, push, and open a PR or a stack of PRs in the project's conventions, with a body template per change type and screenshots attached through `gh` for visible changes, then land through GitHub auto-merge. |
 | [`validate-idea`](skills/validate-idea/SKILL.md) | Shape a raw product idea into a direction: a draft with stated defaults, a prototype with variants, then an ADR, a spec issue, and slice issues. |
 
