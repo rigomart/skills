@@ -15,6 +15,8 @@ How to build it is your call. This covers when to ask and what to prove.
 
 Settle what the code, docs, research or a quick experiment can settle, and record each choice as a decision. Ask only what none of those answer and a wrong guess would be costly to undo: a data model or public API others build on, a direction the rest of the work depends on. A choice you could change in a line later (copy, values, placeholder data, what's left out of scope) is a decision, not a question. Ask once, before building, numbered, recommendation first, and keep working on the rest.
 
+When a request leaves several plausible directions for how something looks or behaves, or the user is still unhappy after a second try, settle it with the `prototype` skill before building.
+
 ## Prove it
 
 Proof is what you observed yourself on the real thing: a repro that fails before and passes after, before and after screenshots, the same benchmark before and after, behavior pinned through a refactor. The before is gone once you edit, so capture it first. Run what CI runs too. A check you couldn't run is `INCONCLUSIVE`, not a pass.
