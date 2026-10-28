@@ -36,4 +36,4 @@ Short and plain:
 - **Decisions:** each choice made for the user, and how to reverse it.
 - **Not done:** what's unproven, and issue candidates.
 
-Then stop. Ship only when the request asked for it, with the `ship-changes` skill.
+Then stop. Ship only when the request asked for it, with the `ship-changes` skill. File issue candidates the user picks with the `file-issue` skill.
