@@ -5,7 +5,7 @@ description: Build switchable variants of a screen or behavior next to the curre
 
 # Prototype
 
-The user decides faster by using variants than by reading proposals. Build them first, in the product's own components and data, and let the user steer. A prototype ends when the user picks a direction; building it for real is the `implement` skill's job.
+The user decides faster by using variants than by reading proposals. Build them first, in the product's own components and data, and let the user steer. A prototype ends when the user picks a direction.
 
 ## 1. Frame
 
@@ -56,5 +56,3 @@ Expect a few rounds. The user's reaction ("too busy", "this but with the styling
 - **Fix what is settled, vary what is open.** Once some choices are decided, build one prototype with them in place and make only the open questions switchable.
 - **Drop what the user drops** and build new directions in its place, without leaning on the one they called a reference.
 - **Commit each round.**
-
-When the user picks, hand the chosen variant to the `implement` skill, naming the commit that keeps the others. The real build replaces the prototype code for that surface.
