@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# wait-green: wait until a pull request's checks finish on its current head,
+# then print one verdict line.
+#
+#   wait-green <pr> [--repo owner/name]
+#
+# <pr> is a number, URL or branch. Without --repo, gh uses the current checkout.
+#
+# Exit codes
+#   0  every check passed or was skipped on the head, or the PR merged
+#   1  needs you: a check failed, the branch conflicts with its base, or the PR closed
+#   2  bad input, or no checks registered on the head within 5 minutes
+set -uo pipefail
+
+usage="usage: wait-green <pr> [--repo owner/name]"
+pr="${1:-}"
+[ -n "$pr" ] && [ "${pr#-}" = "$pr" ] || { echo "wait-green: $usage"; exit 2; }
+shift
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --repo) [ -n "${2:-}" ] || { echo "wait-green: $usage"; exit 2; }; export GH_REPO="$2"; shift 2 ;;
+    *) echo "wait-green: unknown argument '$1'. $usage"; exit 2 ;;
+  esac
+done
+
+interval=20
+
+field() { gh pr view "$pr" --json "$1" --jq ".$1"; }
+
+exit_if_failed() {
+  local failed
+  failed=$(gh pr checks "$pr" --json name,bucket,link \
+    --jq '[.[] | select(.bucket == "fail" or .bucket == "cancel") | "\(.name) \(.link)"] | join("; ")' 2>/dev/null)
+  if [ -n "$failed" ]; then
+    echo "#$pr check failed on ${head:0:7}: $failed"
+    exit 1
+  fi
+}
+
+count_checks() {
+  # gh exits 1 with "no checks reported" while none exist, and 8 while some are pending.
+  gh pr checks "$pr" --json bucket --jq "[.[] | select($1)] | length" 2>/dev/null
+}
+
+state=$(field state) || { echo "wait-green: cannot read PR '$pr'"; exit 2; }
+
+while :; do
+  case "$state" in
+    MERGED) echo "#$pr merged"; exit 0 ;;
+    CLOSED) echo "#$pr closed without merging"; exit 1 ;;
+  esac
+  head=$(field headRefOid)
+
+  # Checks appear seconds to minutes after a push. Until then the head reports none.
+  tries=0
+  until [ "$(count_checks true)" -gt 0 ] 2>/dev/null; do
+    tries=$((tries + 1))
+    if [ "$tries" -ge 15 ]; then
+      echo "#$pr no checks on ${head:0:7} after 5 minutes: CI may not run for this branch"
+      exit 2
+    fi
+    sleep "$interval"
+  done
+
+  gh pr checks "$pr" --watch --fail-fast --interval "$interval" >/dev/null 2>&1
+
+  exit_if_failed
+
+  # A workflow that registers late can start after the watch saw the rest finish.
+  sleep "$interval"
+  state=$(field state)
+  [ "$(field headRefOid)" = "$head" ] || continue
+  [ "$(count_checks '.bucket == "pending"')" = 0 ] || continue
+  exit_if_failed
+  break
+done
+
+merge_state=$(field mergeStateStatus)
+base=$(field baseRefName)
+summary=$(gh pr checks "$pr" --json bucket --jq 'group_by(.bucket) | map("\(length) \(.[0].bucket)") | join(", ")')
+# mergeStateStatus says BEHIND only when nothing else blocks the merge, so count instead.
+behind=$(gh api "repos/{owner}/{repo}/compare/$base...$head" --jq .behind_by 2>/dev/null || echo "?")
+if [ "$merge_state" = "DIRTY" ]; then
+  echo "#$pr green on ${head:0:7} ($summary), but the branch conflicts with $base"
+  exit 1
+fi
+echo "#$pr green on ${head:0:7}: $summary; $behind commits behind $base; merge state $merge_state"
