@@ -32,5 +32,4 @@ Short and plain:
 - **Changed:** what a user or caller now sees.
 - **Evidence:** shown inline when the interface can (images, short output), otherwise the path and how to view or rerun it.
 - **Decisions:** each choice made for the user, and how to reverse it.
-- **Review:** rounds run, and each finding not fixed with why, or that none ran.
-- **Not done:** what's unproven, and issue candidates.
+- **Not done:** what's unproven, each real review finding left unfixed with why, and issue candidates. Findings you fixed or dismissed stay out of the report.
