@@ -14,7 +14,7 @@ You run the task through one playbook. The playbook owns the order of the work, 
 | --- | --- | --- |
 | design | changes how something looks or feels: a redesign, polish, a prototype, layout, "looks terrible" | [playbooks/design.md](playbooks/design.md) |
 | build | adds or changes behavior: a feature, an issue number, a refactor, a cleanup, a perf fix, a new project | [playbooks/build.md](playbooks/build.md) |
-| general | everything else: a question, an opinion, a status check, a chore | [playbooks/general.md](playbooks/general.md) |
+| general | everything else: a question, an opinion, a status check, a chore, babysitting a PR | [playbooks/general.md](playbooks/general.md) |
 
 When the first word after `/do` names a playbook, use it. Otherwise pick from the request: a change judged by looking at it is design, even when it adds behavior; a change judged by what it does is build.
 

@@ -4,6 +4,7 @@ My agent skills, installable into any repo with the [`skills`](https://github.co
 
 | Skill | What it does |
 | --- | --- |
+| [`babysit-pr`](skills/babysit-pr/SKILL.md) | Watch a PR until its checks pass: wait with T3 Code's PR watcher or a bundled `gh` script, fix failures from the PR's own diff, rerun a flake once, then hand it back green for your review. It never merges. Shapes from tstack's [`babysit-pr`](https://github.com/t3dotgg/tstack/tree/main/skills/babysit-pr) and pstack's babysit playbook. |
 | [`comments`](skills/comments/SKILL.md) | Cut a change's comments to the ones that earn their place: a fresh checker judges them against a closed keep list, surprises become renames, constraints become checks. |
 | [`create-skill`](skills/create-skill/SKILL.md) | Write or revise a skill: check a skill is the right fix, choose invocation, write the description as the trigger, validate with a script, prove it on a cold agent. |
 | [`create-verification-skill`](skills/create-verification-skill/SKILL.md) | Generate a project's `verify-<app>` skill: prove each user-visible change in the real app on an isolated instance, with exact checks and one file per feature saying what to prove. Web (agent-browser) and macOS (XCUITest, tried on one app) for now. |

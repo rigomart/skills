@@ -10,6 +10,6 @@ You own the change and its proof.
 6. Review round 2 of 3, only when round 1 led to fixes. A fresh Reviewer gets the original brief, the earlier findings, your response to each and any objection still open. It checks the fixes and reopens nothing already settled.
 7. Review round 3 of 3, only when round 2 led to fixes, built the same way. Findings still open after it go under **Not done**.
 8. When review changed code, rerun the checks from step 4.
-9. Stop. Ship only when the request asked for it, with the `ship-changes` skill.
+9. Stop. Ship only when the request asked for it, with the `ship-changes` skill, then babysit the PR to green with the `babysit-pr` skill.
 
-**Reply:** `implement`'s **Report**.
+**Reply:** `implement`'s **Report**, then `babysit-pr`'s reply when you shipped.
