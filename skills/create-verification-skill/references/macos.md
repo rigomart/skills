@@ -119,7 +119,7 @@ None of these show up in the accessibility tree. Prove what the user sees about 
 
 Check for each of these while building the examples, and record the ones the app has, along with the fix:
 
-- **Automation mode.** Without it a run stops at a password prompt. `automationmodetool` with no arguments prints whether the device "DOES NOT REQUIRE user authentication"; `doctor` greps for that. The one-time fix is done by a person: `sudo automationmodetool enable-automationmode-without-authentication`.
+- **Automation mode.** Without it a run stops at a password prompt. `automationmodetool` with no arguments prints whether the device "DOES NOT REQUIRE user authentication"; `doctor` greps for that. The one-time fix needs a person with admin rights (see `man automationmodetool`); the agent never enables it, and `doctor` only reports it.
 - **The developer's own copy.** Same hotkey: both fire. Same URL scheme: links may go to the wrong copy. See The instance.
 - **Non-activating panels and menu bar apps.** The app under test is not frontmost by design. `app.activate()` changes the very behavior being proven, so query the panel without activating the app.
 - **Keys after a non-activating panel closes** *(seen)*. After Aside's panel closed with Esc, XCUITest's next `typeText` to the previously active app never arrived, yet with a real keyboard typing went back to that app. It is an XCUITest limitation: focus return after a non-activating panel is a manual check. The agent first reported it to the user as a likely app bug, reasoning that XCUITest keys reach global hotkeys and so behave like real ones; the user's manual check disproved it. A test-tool symptom is not an app bug until a real input reproduces it.
