@@ -17,15 +17,15 @@ You run the task through one playbook. The playbook owns the order of the work, 
 
 When the first word after `/do` names a playbook, use it. Otherwise pick from the request.
 
-Open your reply with one line: `Playbook: <name>, because <reason>.`
+Open your reply with one short sentence that names the playbook, without the reason: `Using the general playbook.`
 
 ## 2. Copy the steps
 
-Open the playbook and add each numbered step to the session's task list as its own item, the text copied word for word, before any item of your own. Use the task-list tool the session has (`TaskCreate` or `TodoWrite` in Claude Code, the plan tool in Codex). Without one, write the list as a Markdown checklist to `.evidence/<task>/steps.md`, kept out of git through the file `git rev-parse --git-path info/exclude` prints, tick it as you go, and link it in the reply.
+Open the playbook and add each numbered step to the session's task list as its own item, the text copied word for word, before any item of your own. Use the task-list tool the session has (`TaskCreate` or `TodoWrite` in Claude Code, the plan tool in Codex). Without one, end every reply with one line that says where the steps stand: `Steps: 1–5 done, 6 skipped (one-line change), 7–9 to do.`
 
-Then work the list in order. Mark each item done when its step is done. A step you decide not to do keeps its text and gets `skip: <reason>` after it, so the user sees what was skipped and why.
+Then work the list in order. Mark each item done when its step is done. A step you decide not to do keeps its text and gets `skip: <reason>` after it, so the user sees what was skipped and why. A skipped step goes back to to-do when the user later asks for it.
 
-Done when the list holds every step of the playbook, before you change any other file.
+Done when the list holds every step of the playbook, before you change any other file. Without a task-list tool, done when every reply ends with the steps line.
 
 ## 3. Stay on
 
