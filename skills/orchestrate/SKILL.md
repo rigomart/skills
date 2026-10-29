@@ -7,6 +7,8 @@ description: Fan substantial work out to subagents while you keep the judgment a
 
 You are the lead orchestrator. The work is to be **fanned out to subagents**, because the user or a skill asked for it. Doing the task solo defeats the purpose of the skill and counts as failing to follow it.
 
+A conditional ask ("if needed", "if convenient", "as needed") sets a higher bar: delegate only the workstreams that are heavy, noisy or parallel enough to gain from it, and do the rest yourself. A plan of one agent, or none, then follows the skill.
+
 ## Non-negotiables
 
 While this skill is active, these rules override your default habits:
@@ -14,7 +16,7 @@ While this skill is active, these rules override your default habits:
 1. **Delegate heavy work by default.** Every meaningfully sized workstream goes to a subagent unless you can state, in one sentence, why delegation is worse: a hard sequential dependency on an unfinished result, or coordination cost exceeding the work. "I can do it faster myself" is not a valid reason for heavy work; context isolation and parallelism are the point. Quick one-off actions are yours to do directly (see What you do yourself). Do not spawn an agent to read one file or fix one line.
 2. **Choose every subagent's model on purpose.** Give every workstream a role (Step 2) and set the role's model on every spawn.
 3. **Launch independent agents in parallel, in a single message.** Serial spawning of independent work is a failure mode. Batch all independent spawn calls into one response so they run concurrently.
-4. **Plan before the first spawn.** Before any agent launches, show the user a short delegation plan (Step 1). Quick reads to inform the plan are fine. No plan and you will drift into doing everything solo.
+4. **Plan before the first spawn.** Before any agent launches, write the delegation plan (Step 1). Quick reads to inform the plan are fine. No plan and you will drift into doing everything solo.
 
 Anti-patterns this skill exists to prevent. If you catch yourself in one, stop and correct:
 
@@ -38,7 +40,7 @@ The line is effort and context cost. A bounded chunk of work that needs sustaine
 
 ## Step 1: Write the delegation plan
 
-Before the first spawn, output a compact plan the user can see:
+Before the first spawn, write the plan to `.evidence/<task>/plan.md`, excluded from git through the file `git rev-parse --git-path info/exclude` prints, and keep it current as waves change:
 
 | Workstream | Agent type | Role | Provider | Wave |
 | --- | --- | --- | --- | --- |
@@ -85,8 +87,6 @@ Give each subagent enough context to work alone, without the full conversation. 
 - the deliverable: evidence, tests, file changes, or a structured summary of concise findings, not raw logs;
 - what it must not decide without escalating to you.
 
-Each review round is a fresh spawn. Its prompt carries the original brief, the earlier findings, the responses to them, and any objection still unresolved.
-
 ## Decision boundaries
 
 Make routine, reversible, low-impact decisions yourself: search strategy, agent assignment, role, test selection, small implementation details consistent with existing patterns, retrying a failed subtask.
@@ -102,7 +102,6 @@ Treat subagent output as evidence, not truth.
 - Run required verification after integrating changes.
 - When an unbiased check matters, use an independent reviewer and do not hint at the conclusion you expect.
 - Retry or reassign incomplete subtasks; do not silently fill critical gaps with assumptions.
-- Return one unified answer: completed work, evidence, unresolved risk, and decisions that need the user.
 
 You remain accountable for the outcome even when nearly all supporting work was delegated.
 
