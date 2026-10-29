@@ -15,7 +15,9 @@ Settle what the code, docs, research or a quick experiment can settle, and recor
 
 ## Prove it
 
-Proof is what you observed yourself on the real thing: a repro that fails before and passes after, before and after screenshots, the same benchmark before and after, behavior pinned through a refactor. The before is gone once you edit, so capture it first. Run what CI runs too. A check you couldn't run is `INCONCLUSIVE`, not a pass.
+Proof is what you observed yourself on the real thing: a repro that fails before and passes after, before and after screenshots, the same benchmark before and after, behavior pinned through a refactor. The before is gone once you edit, so capture it first. Run what CI runs too.
+
+For a visible change, the before and after are screenshots of every screen and state the change touches, at the same sizes, taken with the project's `verify-<app>` skill when it has one. Check each after image against the request before you show it (empty space, overflow, alignment, contrast in each theme), fix what you find, and capture again. A check you couldn't run is `INCONCLUSIVE`, not a pass.
 
 Save the artifacts and an `evidence.md` (each claim, how you checked it, its artifact) in `.evidence/<change>/`, excluded from git through the file `git rev-parse --git-path info/exclude` prints.
 
