@@ -9,7 +9,7 @@ How to build it is your call. This covers when to ask, what to prove, how big th
 
 ## Decide, don't interview
 
-An issue number or URL is the request: read it with its comments (`gh issue view <n> --comments`).
+An issue number or URL is the request: read its body and comments with `gh issue view <n> --json title,body,comments` (outside a terminal, `--comments` prints the comments only).
 
 Settle what the code, docs, research or a quick experiment can settle, and record each choice as a decision. Ask only what none of those answer and a wrong guess would be costly to undo: a data model or public API others build on, a direction the rest of the work depends on. A choice you could change in a line later (copy, values, placeholder data, what's left out of scope) is a decision, not a question. Ask once, before building, numbered, recommendation first, and keep working on the rest.
 
@@ -27,10 +27,10 @@ The smallest change that does what was asked, on the current branch. Fix what th
 
 ## Report
 
-Short and plain:
+Short and plain, about where things stand, not how they got there: review findings you fixed or dismissed stay out.
 
 - **Changed:** what a user or caller now sees.
 - **Evidence:** shown inline when the interface can (images, short output), otherwise the path and how to view or rerun it.
 - **Decisions:** each choice made for the user, and how to reverse it.
 - **Needs you:** each step only the user can take for the change to work, before or after merging (a secret, a migration, a data step). Omit it when there is none.
-- **Not done:** what's unproven, each real review finding left unfixed with why, and issue candidates. Findings you fixed or dismissed stay out of the report.
+- **Not done:** what's unproven, each real review finding left unfixed with why, and issue candidates.

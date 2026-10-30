@@ -19,7 +19,7 @@ You run the task through one playbook. The playbook owns the order of the work, 
 
 When the first word after `/do` names a playbook, use it. Otherwise pick from the request.
 
-Open your reply with one short sentence that names the playbook, without the reason: `Using the general playbook.`
+Read the playbook, then open your reply with one short sentence that names it, without the reason: `Using the general playbook.`
 
 ## 2. Copy the steps
 

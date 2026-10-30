@@ -50,7 +50,7 @@ Commit the round on a branch for the prototype before you send it. The commit ke
 
 ## 6. Converge
 
-Expect a few rounds. The user's reaction ("too busy", "this but with the styling of the first") is the signal: find what it reacts to, and reshape rather than defend.
+Expect a few rounds. The user's reaction ("too busy", "this but with the styling of the first") is the signal: find what it reacts to, and reshape only that rather than defend. A complaint about one state or part reopens that part; a remark about one variant rules out that variant's problem, not everything near it.
 
 - **A combination keeps its base.** When the user names a variant as the base and asks for a part of another, start from the named variant exactly as it is and bring over only the named part.
 - **Fix what is settled, vary what is open.** Once some choices are decided, build one prototype with them in place and make only the open questions switchable.
