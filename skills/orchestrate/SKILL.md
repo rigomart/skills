@@ -33,23 +33,23 @@ Delegation applies to workstreams, not every keystroke. Handle these directly, w
 
 - one-off reads, quick greps, and single lookups needed for your own orchestration decisions;
 - quick edits: a one-line fix, a rename, a config tweak, deleting an obsolete file;
-- glue work during integration: small adjustments that stitch subagent results together;
+- glue work during integration: small adjustments that stitch subagent results together. A fix to an agent's own change, from a review or a failed check, goes back to that agent;
 - verification commands (the test suite once, a build, a lint pass) whose output you need to judge personally.
 
 The line is effort and context cost. A bounded chunk of work that needs sustained focus, produces noisy intermediate output, or benefits from an independent perspective gets delegated. An atomic action you would finish in a call or two, you just do.
 
 ## Step 1: Write the delegation plan
 
-Before the first spawn, write the plan to `.evidence/<task>/plan.md`, excluded from git through the file `git rev-parse --git-path info/exclude` prints, and keep it current as waves change:
+Before the first spawn, write the plan to `.evidence/<task>/plan.md`, excluded from git through the file `git rev-parse --git-path info/exclude` prints. Update its State column whenever an agent starts, reports or is stopped, and answer status questions from it:
 
-| Workstream | Agent type | Role | Provider | Wave |
-| --- | --- | --- | --- | --- |
-| e.g. run the full end-to-end suite and report each failing test's name and message verbatim | general-purpose | Runner | session | 1 |
-| e.g. find every place that writes to the orders table, through the ORM and raw SQL | Explore | Scout | session | 1 |
-| e.g. find why sessions drop after a deploy | general-purpose | Investigator | session | 1 |
-| e.g. implement the API slice (`src/api/*` only), mirroring the users slice | general-purpose | Implementer | session | 2 |
-| e.g. migrate the sessions table and its readers | general-purpose | Engineer | session | 2 |
-| e.g. adversarial security review of the integrated diff | general-purpose | Reviewer | other | 3 |
+| Workstream | Agent type | Role | Provider | Wave | State |
+| --- | --- | --- | --- | --- | --- |
+| e.g. run the full end-to-end suite and report each failing test's name and message verbatim | general-purpose | Runner | session | 1 | done: 3 failures |
+| e.g. find every place that writes to the orders table, through the ORM and raw SQL | Explore | Scout | session | 1 | running |
+| e.g. find why sessions drop after a deploy | general-purpose | Investigator | session | 1 | running |
+| e.g. implement the API slice (`src/api/*` only), mirroring the users slice | general-purpose | Implementer | session | 2 | queued |
+| e.g. migrate the sessions table and its readers | general-purpose | Engineer | session | 2 | queued |
+| e.g. adversarial security review of the integrated diff | general-purpose | Reviewer | other | 3 | queued |
 
 Rules for the plan:
 
@@ -70,11 +70,13 @@ If `model-roles` is not installed, say so under the plan and run every workstrea
 1. Launch wave 1 in a single message with one spawn call per workstream.
 2. While agents run, do orchestrator work: resolve requirements, inspect shared context, prepare integration, handle the critical path. Do not idle, and do not duplicate a search you already delegated.
 3. Agents may run in the background and notify you when they finish. Do not poll them, and never report or predict a result before its notification arrives. If the user asks in the meantime, say it is still running.
-4. When results arrive, steer: stop redundant or drifting agents, continue an existing agent (in Claude Code, `SendMessage`) instead of respawning when its context is still useful, and launch the next wave.
+4. When results arrive, steer: stop redundant or drifting agents, continue an existing agent instead of respawning when its context is still useful, and launch the next wave.
 5. Integrate results into one coherent solution. Resolve contradictions with evidence, a targeted follow-up, or an independent tie-breaker agent.
 6. Verify claims, diffs, and tests yourself, as deeply as the risk calls for.
 
-For write-heavy waves, give each agent exclusive ownership of files or modules. Never assign concurrent edits to overlapping areas unless the platform gives each agent an isolated workspace (in Claude Code, `isolation: "worktree"`) and you have a deliberate merge plan.
+Run at most three agents that build, test or drive an app at once, and at most one that drives a browser or the app, unless the user sets other limits; read-only agents don't count. Tell reviewers to start no dev server, browser or full test suite. An agent that starts a long-running process stops it before it reports.
+
+For write-heavy waves, give each agent exclusive ownership of files or modules. Never assign concurrent edits to overlapping areas unless the platform gives each agent an isolated workspace, such as its own worktree, and you have a deliberate merge plan.
 
 ## Write bounded delegation prompts
 
@@ -107,4 +109,4 @@ You remain accountable for the outcome even when nearly all supporting work was 
 
 ## Fallback: constrained environments
 
-If the environment has no subagent tool, or spawning is disabled, continue as a single agent, say so briefly, and do not pretend delegation occurred. Assume subagents cannot spawn their own subagents.
+If the environment has no subagent tool, or spawning is disabled, continue as a single agent, say so briefly, and do not pretend delegation occurred.

@@ -12,7 +12,8 @@ You run the task through one playbook. The playbook owns the order of the work, 
 
 | Playbook | The request | File |
 | --- | --- | --- |
-| build | changes what something does or how it looks: a feature, an issue number, a refactor, a cleanup, a perf fix, a new project, a redesign, polish, layout, "looks terrible" | [playbooks/build.md](playbooks/build.md) |
+| fleet | several changes, each its own PR: a list of issues, "deal with the open issues", "finish what's pending for the release" | [playbooks/fleet.md](playbooks/fleet.md) |
+| build | one change to what something does or how it looks: a feature, an issue number, a refactor, a cleanup, a perf fix, a new project, a redesign, polish, layout, "looks terrible" | [playbooks/build.md](playbooks/build.md) |
 | research | needs evidence gathered before it can be answered: "what's the best X", "how could we build X", "is X feasible", "should we keep or drop X", "validate these sources", "look into X" | [playbooks/research.md](playbooks/research.md) |
 | general | everything else: a question the code or history answers in a read or two, an opinion, a status check, a chore, babysitting a PR | [playbooks/general.md](playbooks/general.md) |
 
@@ -22,7 +23,7 @@ Open your reply with one short sentence that names the playbook, without the rea
 
 ## 2. Copy the steps
 
-Open the playbook and add each numbered step to the session's task list as its own item, the text copied word for word, before any item of your own. Use the task-list tool the session has (`TaskCreate` or `TodoWrite` in Claude Code, the plan tool in Codex). Without one, end every reply with one line that says where the steps stand: `Steps: 1–5 done, 6 skipped (one-line change), 7–9 to do.`
+Open the playbook and add each numbered step to the session's task list as its own item, the text copied word for word, before any item of your own. Use the session's task-list or plan tool. Without one, end every reply with one line that says where the steps stand: `Steps: 1–5 done, 6 skipped (one-line change), 7–9 to do.`
 
 Then work the list in order. Mark each item done when its step is done. A step you decide not to do keeps its text and gets `skip: <reason>` after it, so the user sees what was skipped and why. A skipped step goes back to to-do when the user later asks for it.
 
