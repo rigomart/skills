@@ -126,7 +126,7 @@ Open every PR ready for review, never as a draft. When the `link_pull_request` t
 
 ## Landing
 
-Opening a PR does not merge it. Land only when the user asks to merge, land, or ship it. When asked, follow [references/landing.md](references/landing.md), or [references/stack.md](references/stack.md) for a stack.
+Opening a PR does not merge it. Land only when the user asks to merge or land it; "ship it" asks for the PR. When asked, follow [references/landing.md](references/landing.md), or [references/stack.md](references/stack.md) for a stack.
 
 ## Workflow
 
