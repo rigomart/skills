@@ -13,7 +13,8 @@ You run the task through one playbook. The playbook owns the order of the work, 
 | Playbook | The request | File |
 | --- | --- | --- |
 | build | changes what something does or how it looks: a feature, an issue number, a refactor, a cleanup, a perf fix, a new project, a redesign, polish, layout, "looks terrible" | [playbooks/build.md](playbooks/build.md) |
-| general | everything else: a question, an opinion, a status check, a chore, babysitting a PR | [playbooks/general.md](playbooks/general.md) |
+| research | needs evidence gathered before it can be answered: "what's the best X", "how could we build X", "is X feasible", "should we keep or drop X", "validate these sources", "look into X" | [playbooks/research.md](playbooks/research.md) |
+| general | everything else: a question the code or history answers in a read or two, an opinion, a status check, a chore, babysitting a PR | [playbooks/general.md](playbooks/general.md) |
 
 When the first word after `/do` names a playbook, use it. Otherwise pick from the request.
 
