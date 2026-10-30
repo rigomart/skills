@@ -12,7 +12,7 @@
 # group is `used` (the skill was loaded), `edited` (the session changed the skill's
 # files), `named` (a prompt names it, never loaded) or `similar` (a prompt matches a
 # term, the skill never loaded). other-skills lists the other skills the session
-# loaded. Sessions that loaded review-skill or ran this script, and Codex
+# loaded. Sessions that loaded author-skills or review-skill or ran this script, and Codex
 # auto-review sessions, are left out.
 #
 # show prints a session as one line per event, prefixed with its line number in the
@@ -122,8 +122,8 @@ def named_re($n):
 (map(select(.k == "meta")) | first // {}) as $meta
 | (map(select(.k == "user")) | map(.t)) as $prompts
 | loads($name) as $loads
-| select(loads("review-skill") == 0)
-| select(any(.[]; .k == "tool" and (.t | contains("review-skill/scripts/sessions.sh"))) | not)
+| select(loads("author-skills") == 0 and loads("review-skill") == 0)
+| select(any(.[]; .k == "tool" and (.t | test("(author-skills|review-skill)/scripts/sessions\\.sh"))) | not)
 | select(($prompts | first // "") | startswith("The following is the Codex agent history") | not)
 | ([$prompts[] | select(test(named_re($name); "i"))] | length) as $named
 | (if $terms == "" then 0 else [$prompts[] | select(test($terms; "i"))] | length end) as $hits
