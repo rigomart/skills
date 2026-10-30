@@ -32,4 +32,5 @@ Short and plain:
 - **Changed:** what a user or caller now sees.
 - **Evidence:** shown inline when the interface can (images, short output), otherwise the path and how to view or rerun it.
 - **Decisions:** each choice made for the user, and how to reverse it.
+- **Needs you:** each step only the user can take for the change to work, before or after merging (a secret, a migration, a data step). Omit it when there is none.
 - **Not done:** what's unproven, each real review finding left unfixed with why, and issue candidates. Findings you fixed or dismissed stay out of the report.
