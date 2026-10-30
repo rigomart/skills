@@ -92,7 +92,7 @@ Lesson: an instruction to *say* something mid-task was skipped twice. An instruc
 
 ## Open
 
-- Playbooks still to write: advise, research, debug, skill.
+- Playbooks still to write: advise, debug, skill.
 - The design playbook has not had an end-to-end run.
 - Making the called skills user-only and reading them by path, as pstack does.
 - Checking whether `/do` actually gets typed, a few weeks in.
