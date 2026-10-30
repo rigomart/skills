@@ -17,7 +17,7 @@ You own the queue: what runs, when, and what reaches the user. Each item's owner
 
 | Item | Owner | PR | State | Next | Needs you |
 | --- | --- | --- | --- | --- | --- |
-| #22 recreated worktree is removed | how to reach the owner (its id or thread) | #36 | checks green | user review | merge; nothing before |
+| #12 export fails on an empty list | how to reach the owner (its id or thread) | #40 | checks green | user review | merge; nothing before |
 
 State is one of: queued, building, waiting on an answer, PR open, checks failing, ready for review, merged, moved out (to `/do build`), dropped. A new session resumes from this file, so it carries everything the work needs that the PRs don't: settled decisions, items queued behind others, why an item was dropped.
 
@@ -26,7 +26,7 @@ State is one of: queued, building, waiting on an answer, PR open, checks failing
 Fill in each `<...>`:
 
 ```text
-<The item as a user would ask for it: "Fix #22 (<url>) and open a PR against <default>.">
+<The item as a user would ask for it: "Fix #12 (<url>) and open a PR against <default>.">
 
 Follow the build playbook at <absolute path of this folder>/build.md. You may spawn the subagents it calls for.
 
