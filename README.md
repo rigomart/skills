@@ -31,8 +31,7 @@ Most skills load on their own when a task matches their description. The ones ma
 
 ### Write and test skills
 
-- [`create-skill`](skills/create-skill/SKILL.md): writes or revises a skill. Checks a skill is the right fix, chooses how it's invoked, writes the description as the trigger, validates it with a script, and proves it on a cold agent.
-- [`review-skill`](skills/review-skill/SKILL.md): reviews a skill from its text, its overlap with other skills, and past Claude Code, Codex and Cursor sessions with and without it, then proposes what to keep, generalize, move or cut.
+- [`author-skills`](skills/author-skills/SKILL.md): writes, revises and reviews skills and playbooks. Holds the design rules (one owner per rule, subtract before you add, encode what must hold in structure, a repeat before a rule, process in playbooks and judgment in skills, references to whole files only) and the standard for descriptions, layout and prose. Writing checks a skill is the right fix, validates it with a script and proves it on a cold agent. Reviewing reads the text, its overlap with other skills, and past Claude Code, Codex and Cursor sessions with and without it, then proposes what to keep, generalize, move or cut.
 - [`create-verification-skill`](skills/create-verification-skill/SKILL.md) (**user-invoked**): generates a project's `verify-<app>` skill, so agents prove each user-visible change in the real app on an isolated instance. Web (agent-browser) and macOS (XCUITest) for now.
 
 ## Install
