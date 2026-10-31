@@ -106,6 +106,7 @@ Every template, in every PR:
 - Write each section the template has; don't add or drop any. Screenshots is the one conditional section, and its template says when.
 - No `## Summary` or `## Test plan` boilerplate, file-by-file lists, or SHAs. If a command was not run, say why instead of listing it.
 - Compromises, including any the project's agent instructions ask you to surface, go in Tradeoffs, Fix, or Blast radius, whichever the template has.
+- Run the `unslop` skill on the title, the body and each commit message body if it is installed, before you commit or open the PR.
 - End with the closing issue reference when the work is issue-backed (see Closing issues).
 
 ### Screenshots
