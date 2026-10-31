@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# can-auto-merge: say whether `gh pr merge --auto` would wait for CI on a branch,
+# and which merge methods the repository allows, in one line.
+#
+#   can-auto-merge [<branch>] [--repo owner/name]
+#
+# <branch> is the PR's base, the default branch when omitted. Without --repo, gh
+# uses the current checkout. Required checks come from rulesets and from classic
+# branch protection, both readable without admin rights.
+#
+# Exit codes
+#   0  auto-merge is allowed and the branch has required checks: arm it
+#   1  auto-merge is off, or the branch has no required checks, so --auto would
+#      merge at once: ask the user before merging another way
+#   2  bad input, or the repository or branch cannot be read
+set -uo pipefail
+
+usage="usage: can-auto-merge [<branch>] [--repo owner/name]"
+branch=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --repo) [ -n "${2:-}" ] || { echo "can-auto-merge: $usage"; exit 2; }; export GH_REPO="$2"; shift 2 ;;
+    -*) echo "can-auto-merge: unknown argument '$1'. $usage"; exit 2 ;;
+    *) [ -z "$branch" ] || { echo "can-auto-merge: $usage"; exit 2; }; branch="$1"; shift ;;
+  esac
+done
+
+# gh repo view ignores GH_REPO, so --repo is used as given.
+repo="${GH_REPO:-$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)}"
+[ -n "$repo" ] || { echo "can-auto-merge: cannot read the repository"; exit 2; }
+settings=$(gh api "repos/$repo" \
+  --jq '[.default_branch, (.allow_auto_merge | tostring), ([["squash", .allow_squash_merge], ["merge", .allow_merge_commit], ["rebase", .allow_rebase_merge]] | map(select(.[1]) | .[0]) | join(","))] | @tsv' 2>/dev/null) \
+  || { echo "can-auto-merge: cannot read settings of $repo"; exit 2; }
+IFS=$'\t' read -r default auto methods <<<"$settings"
+branch="${branch:-$default}"
+
+classic=$(gh api "repos/$repo/branches/$branch" \
+  --jq '(.protection.required_status_checks.contexts // []) | join("\n")' 2>/dev/null) \
+  || { echo "can-auto-merge: cannot read branch '$branch' of $repo"; exit 2; }
+rules=$(gh api "repos/$repo/rules/branches/$branch" --jq '
+  ([.[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context] | join("\n")),
+  ([.[] | select(.type == "pull_request") | .parameters.required_approving_review_count // 0] | max // 0)' 2>/dev/null) \
+  || rules=$'\n0'
+approvals=$(printf '%s\n' "$rules" | tail -n 1)
+checks=$(printf '%s\n%s\n' "$classic" "$(printf '%s\n' "$rules" | sed '$d')" | sed '/^$/d' | sort -u | paste -sd, -)
+
+detail="methods: ${methods:-none}; required checks: ${checks:-none}"
+[ "${approvals:-0}" -gt 0 ] 2>/dev/null && detail="$detail; required approvals: $approvals"
+
+if [ "$auto" != "true" ]; then
+  echo "$repo $branch: auto-merge is off in the repository settings ($detail)"
+  exit 1
+fi
+if [ -z "$checks" ]; then
+  echo "$repo $branch: no required checks, so --auto would merge at once ($detail)"
+  exit 1
+fi
+echo "$repo $branch: auto-merge waits for CI ($detail)"

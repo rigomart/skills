@@ -19,7 +19,6 @@ Open the whole stack before landing any of it.
 
 - Verify each PR at its own head, and take its screenshots there.
 - Each PR takes the template for its own title's type. Its body's first line names its place: `Part 2 of 3. Builds on #456.`
-- When the `link_pull_request` tool is available, link every layer.
 
 ## Landing
 

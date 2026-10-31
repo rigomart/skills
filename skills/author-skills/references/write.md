@@ -38,7 +38,7 @@ A skill that was never followed is a draft. Prove it with a fresh agent:
 
 Also, when they apply:
 
-- **A change to an existing skill:** run the same task against the old and new versions, and have one Reviewer (`model-roles`) compare both outputs under neutral labels. The comparison shows whether the fix helps beyond the session that prompted it.
+- **A change to an existing skill:** run the same task against the old and new versions, and have one Reviewer (`subagents` skill) compare both outputs under neutral labels. The comparison shows whether the fix helps beyond the session that prompted it.
 - **A model-invoked skill:** write a few prompts that should fire it and a few near misses that should not, and tune the description until both sets behave.
 - **A playbook:** write 10 to 15 requests in users' words, for it and for its neighbors, with the expected playbook for each. Two fresh agents, given only the `do` skill and its playbooks, pick one per request. A request where they disagree, or both miss, is a defect in the table.
 

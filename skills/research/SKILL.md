@@ -40,7 +40,7 @@ Closest first: the user's own repos (README, `docs/`, notes and decision records
 
 ## Investigators
 
-When the question splits into independent strands, or needs many sources, fan out through the `orchestrate` skill with one read-only Investigator per strand. Each records into its own `<strand>.md` next to the notes, as **Notes** says, and returns a short summary; the verdict is yours. Its brief gives today's date, numbered questions, the constraints and the sources to try first. Read an investigator's file when a finding needs checking, not by default.
+When the question splits into independent strands, or needs many sources, fan out to one read-only Investigator per strand, with the `subagents` skill. Each records into its own `<strand>.md` next to the notes, as **Notes** says, and returns a short summary; the verdict is yours. Its brief gives today's date, numbered questions, the constraints and the sources to try first. Read an investigator's file when a finding needs checking, not by default.
 
 ## Test the deciding claim
 
