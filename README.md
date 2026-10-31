@@ -21,8 +21,7 @@ Most skills load on their own when a task matches their description. The ones ma
 
 ### Work with subagents
 
-- [`orchestrate`](skills/orchestrate/SKILL.md): fans work out to subagents with a delegation plan and a role per workstream, then integrates the results critically.
-- [`model-roles`](skills/model-roles/SKILL.md): picks a subagent's model from its role (Runner, Scout, Checker, Implementer, Engineer, Investigator, Reviewer), on Claude or OpenAI models.
+- [`subagents`](skills/subagents/SKILL.md): decides what goes to a subagent and what stays with you, picks its model from its role (Runner, Scout, Checker, Implementer, Engineer, Investigator, Reviewer) on Claude or OpenAI models, sets the brief and the limits on agents running at once, and checks what comes back.
 
 ### Keep code and language clean
 

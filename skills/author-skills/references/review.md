@@ -56,7 +56,7 @@ Done when the sample is listed with each session's group and why you kept it.
 
 ## 5. Read the sessions
 
-Transcripts run to thousands of lines, so readers do the reading. Split the sample into batches of up to 4 sessions and spawn one read-only Checker subagent per batch, in parallel, each with its model set by the `model-roles` skill (your session's model if it is not installed). Each prompt is [session-reader.md](session-reader.md), verbatim, followed by the skill's source folder, the absolute path to `sessions.sh`, the dated commits, the questions from step 2, and the batch: path, group and date per session.
+Transcripts run to thousands of lines, so readers do the reading. Split the sample into batches of up to 4 sessions and spawn one read-only Checker subagent per batch, in parallel, each with its model set by the `subagents` skill (your session's model if it is not installed). Each prompt is [session-reader.md](session-reader.md), verbatim, followed by the skill's source folder, the absolute path to `sessions.sh`, the dated commits, the questions from step 2, and the batch: path, group and date per session.
 
 Without a subagent tool, apply `session-reader.md` yourself, one session at a time, and say in the report that no independent reader ran.
 

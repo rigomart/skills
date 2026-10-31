@@ -40,26 +40,13 @@ When working in a worktree, do not assume the branch should be based on `main`. 
 
 Part of the branch may already have landed through a squash merge, which `git log origin/main..HEAD` still lists. Check each commit ahead of `main` with `gh pr list --state merged --search <sha>`. When the lower ones already merged, put only the rest on a new descriptive branch from `origin/main` with `git rebase --onto origin/main <last-merged-sha> <new-branch>`, and leave the worktree's branch as it is.
 
-If the current branch is already a descriptive feature branch for the work being shipped, keep using it. If the current branch is `main`, `master`, a branch an agent tool named for itself (`codex/*`, `codex-*`, `t3code/*`, `claude/*`), or a generic branch name, create a new descriptive branch from the current `HEAD`:
+If the current branch is already a descriptive feature branch for the work being shipped, keep using it. If it is `main`, `master`, or any name that isn't about the change, such as one a tool generated (`t3/fe15b4fb`, `claude/…`, `codex/…`) or a generic one (`wip`, `fix`), create a new descriptive branch from the current `HEAD`:
 
 ```bash
 git switch -c <descriptive-branch-name>
 ```
 
 Do not move, reset, or recreate the worktree from `main` just to make a shipping branch. Only change the base when the user asks or when the current branch clearly cannot be pushed or used for a PR.
-
-## Commit Strategy
-
-Use one commit when the changes form one coherent feature or fix. Use multiple commits when changes are independently reviewable, such as production code plus a docs-only policy change, a refactor before a feature, or unrelated fixes discovered during the work.
-
-Every commit uses the project's commit style. When the project has none, use Conventional Commits. Before committing, confirm the staged diff only contains intended files.
-
-```text
-feat(items): add inline item editing
-fix(inbox): keep optimistic count in sync
-docs(agents): document local dev server policy
-refactor(items): extract date update hook
-```
 
 ## One PR or a Stack
 
@@ -75,15 +62,26 @@ When the work splits, follow [references/stack.md](references/stack.md).
 
 Before committing, run the `comments` skill on the diff if it is installed, alongside any review the project runs before a commit.
 
-Before pushing, run what CI runs: the lint, format, typecheck, build, and test commands from the CI workflows, through the project's package scripts or task runner. Run each one CI runs separately. A build that skips tests does not prove they type-check.
+The head you push passes what CI runs: the lint, format, typecheck, build, and test commands from the CI workflows, each run on its own through the project's package scripts or task runner. A build that skips tests does not prove they type-check. A green run of those commands earlier in the session counts; rerun only what the edits since then can break (after a comments-only edit, lint and format).
 
-A user-visible change also needs proof in the real app. If the project has a verification skill or documented way to drive the app, use it. Lint and tests don't substitute for it.
+A user-visible change also needs proof in the real app, which lint and tests don't give. When the work already saved evidence (an `evidence.md` and its artifacts, under `.evidence/` or the verification skill's folder), build the PR from it: its images go in Screenshots, its numbers in Measurements, its repro in Verification. Retake an image only when a later commit changed what it shows. When there is none, capture it with the `implement` skill if it is installed, or the project's verification skill.
 
-When the work already saved evidence (an `evidence.md` and its artifacts, under `.evidence/` or the verification skill's folder), build the PR from it: its images go in Screenshots, its numbers in Measurements, its repro in Verification. Retake an image only when a later commit changed what it shows.
+## Commit Strategy
+
+Use one commit when the changes form one coherent feature or fix. Use multiple commits when changes are independently reviewable, such as production code plus a docs-only policy change, a refactor before a feature, or unrelated fixes discovered during the work.
+
+Every commit uses the project's commit style. When the project has none, use Conventional Commits. Before committing, confirm the staged diff only contains intended files.
+
+```text
+feat(items): add inline item editing
+fix(inbox): keep optimistic count in sync
+docs(agents): document local dev server policy
+refactor(items): extract date update hook
+```
 
 ## PR Format
 
-Use a conventional PR title matching the main commit or the overall change.
+Use a conventional PR title matching the main commit or the overall change. Open every PR ready for review, never as a draft.
 
 ```text
 feat(items): add inline item editing
@@ -122,18 +120,10 @@ The PR body must reference the issue it closes when the work is tied to an issue
 
 Use GitHub closing syntax, such as `Closes #123`, so merging the PR closes the issue automatically. If an issue appears relevant but cannot be identified, ask the user before creating the PR instead of guessing. If the change is clearly not issue-backed, such as a small agent-instruction cleanup requested directly in chat, omit the closing line and continue creating the PR.
 
-Open every PR ready for review, never as a draft. When the `link_pull_request` tool is available, link every PR you open.
-
 ## Landing
 
 Opening a PR does not merge it. Land only when the user asks to merge or land it; "ship it" asks for the PR. When asked, follow [references/landing.md](references/landing.md), or [references/stack.md](references/stack.md) for a stack.
 
-## Workflow
+## Report
 
-1. Read the project's rules, then check branch and worktree state with `git status --short`, `git diff --stat`, and targeted diffs.
-2. Summarize what will ship: one commit or several, one PR or a stack. For a stack, open [references/stack.md](references/stack.md).
-3. Decide whether to keep the current branch or create a descriptive branch from the current worktree `HEAD`.
-4. Run the `comments` skill and verification. Stage only intended files, commit in the project's style, and push.
-5. Create the PR or the stack with a conventional title and the template for its type, attaching screenshots per [references/screenshots.md](references/screenshots.md) when the change is visible and including the closing issue reference when the work is issue-backed, and link each PR.
-6. If the user asked to land, arm auto-merge per Landing.
-7. Final response includes branch, commit hash or hashes, PR link or links, verification status, the images attached or why there are none for a visible change, and whether auto-merge is armed.
+The PR link, one per layer for a stack; its branch and head; the images attached, or why a visible change has none; and whether auto-merge is armed.

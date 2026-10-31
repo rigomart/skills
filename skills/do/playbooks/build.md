@@ -10,11 +10,11 @@ You own the change and its proof. The user owns the direction.
 
    On yes, run the `prototype` skill and stop for the user's pick. Build the pick on a new branch from `origin/<default>` after a `git fetch`, never on top of the prototype branch, so no prototype code reaches the PR. The prototype branch keeps the other variants until you ship.
 3. Capture the before evidence.
-4. Build the change. Work across several subsystems, or with heavy research, runs through the `orchestrate` skill. Work that splits into several PRs switches to the `fleet` playbook.
+4. Build the change. Work across several subsystems, or with heavy research, fans out with the `subagents` skill. Work that splits into several PRs switches to the `fleet` playbook.
 5. Capture the after evidence and run what CI runs.
-6. Review round 1 of 2. Spawn a Reviewer (`model-roles` skill) on the diff with the request and your evidence, and no hint of the verdict you expect. Its brief tells it to start no dev server, browser or full test suite, since step 5 already ran them. Fix each finding that holds up when you check it, or put it under **Not done** with why, and drop the ones that don't. A one-liner, a rename or a copy change skips review. A change that adds behavior gets one, however small.
+6. Review round 1 of 2. Spawn a Reviewer (`subagents` skill) on the diff with the request and your evidence, and no hint of the verdict you expect. Fix each finding that holds up when you check it, or put it under **Not done** with why, and drop the ones that don't. A one-liner, a rename or a copy change skips review. A change that adds behavior gets one, however small.
 7. Review round 2 of 2. Check each fix from round 1 yourself. Spawn a fresh Reviewer only when a fix is too big to check in one read: it gets the original brief, the earlier findings, your response to each and any objection still open, checks the fixes and reopens nothing already settled. Findings still open after it go under **Not done**.
 8. When review changed code, rerun the checks from step 5.
 9. Stop. Ship only when the request asked for it, with the `ship-changes` skill. Once the PR is open, delete the prototype branch the pick came from, locally and on the remote, and name it in the reply. Then babysit the PR to green with the `babysit-pr` skill.
 
-**Reply:** the `implement` skill's report, then the `babysit-pr` skill's reply when you shipped. After a prototype round, the `prototype` skill's reply instead.
+**Reply:** the `implement` skill's report, then the `ship-changes` skill's report and the `babysit-pr` skill's reply when you shipped. After a prototype round, the `prototype` skill's reply instead.

@@ -13,7 +13,7 @@ The comments the change added or edited: the caller's files or diff, or else eve
 
 ## 2. Check
 
-Spawn one read-only Checker subagent, with its model set by the `model-roles` skill (your session's model if that skill is not installed). Its prompt is [references/checker.md](references/checker.md), verbatim, followed by the scope: the repo path, the base ref, and the file list with new untracked files marked as new.
+Spawn one read-only Checker subagent, with its model set by the `subagents` skill (your session's model if that skill is not installed). Its prompt is [references/checker.md](references/checker.md), verbatim, followed by the scope: the repo path, the base ref, and the file list with new untracked files marked as new.
 
 Without a subagent tool, apply `references/checker.md` yourself, comment by comment, and say in the report that no independent checker ran.
 
