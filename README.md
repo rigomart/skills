@@ -26,6 +26,7 @@ Most skills load on their own when a task matches their description. The ones ma
 ### Keep code and language clean
 
 - [`comments`](skills/comments/SKILL.md): cuts a change's comments to the ones that earn their place. A fresh checker judges them against a closed keep list; surprises become renames and constraints become checks.
+- [`unslop`](skills/unslop/SKILL.md): edits prose so it reads easily and drops the tells of AI writing, without changing a fact. Leads with the point, cuts filler and unbacked claims, and warns against faking casualness. A bundled script flags the word-level tells (em dashes, AI vocabulary, chat phrases, title-case headings) and skips code.
 - [`glossary`](skills/glossary/SKILL.md): keeps the project's terminology in `GLOSSARY.md`, one name per concept. Seeds it from the code and UI, challenges conflicting terms during work, and points every agent at it.
 
 ### Write and test skills
