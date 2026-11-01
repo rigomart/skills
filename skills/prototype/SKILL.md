@@ -44,9 +44,9 @@ Done when every variant has been seen under the scenario at each size its refere
 
 ## 5. Send
 
-Leave the prototype running so the user can open it. Reply with one link or command per variant, a side-by-side image or text dump, and a table: variant, what changes, where it struggles. End with your recommendation.
+Leave the prototype running so the user can open it; when you were told to stop your processes, give the command that starts it instead. Reply with one link or command per variant, a side-by-side image or text dump, and a table: variant, what changes, where it struggles. End with your recommendation.
 
-Commit the round on a branch for the prototype before you send it. The commit keeps the variants that lose, and the user often comes back to one.
+Commit the round on a local branch for the prototype before you send it. The commit keeps the variants that lose, and the user often comes back to one. The branch stays local, with no push and no PR, since nobody has picked a direction yet.
 
 ## 6. Converge
 

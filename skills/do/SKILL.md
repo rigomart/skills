@@ -12,7 +12,7 @@ You run the task through one playbook. The playbook owns the order of the work, 
 
 | Playbook | The request | File |
 | --- | --- | --- |
-| fleet | several changes, each its own PR: a list of issues, "deal with the open issues", "finish what's pending for the release" | [playbooks/fleet.md](playbooks/fleet.md) |
+| fleet | several items at once, each with its own agent: a list of issues, "deal with the open issues", "finish what's pending for the release", "a fleet of agents to fix X, prototype Y and review Z" | [playbooks/fleet.md](playbooks/fleet.md) |
 | build | one change to what something does or how it looks: a feature, an issue number, a refactor, a cleanup, a perf fix, a new project, a redesign, polish, layout, "looks terrible" | [playbooks/build.md](playbooks/build.md) |
 | research | needs evidence gathered before it can be answered: "what's the best X", "how could we build X", "is X feasible", "should we keep or drop X", "validate these sources", "look into X" | [playbooks/research.md](playbooks/research.md) |
 | general | everything else: a question the code or history answers in a read or two, an opinion, a status check, a chore, babysitting a PR | [playbooks/general.md](playbooks/general.md) |

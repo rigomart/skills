@@ -8,7 +8,7 @@ Most skills load on their own when a task matches their description. The ones ma
 
 ### Run a task
 
-- [`do`](skills/do/SKILL.md) (**user-invoked**, `/do <task>`): runs a task through a playbook: `build` for one change, `fleet` for several changes that each ship as their own PR, `research` for questions that need evidence gathered, and `general` for everything else. The playbook's steps go into the task list word for word, skipped steps stay visible with a reason, and the playbook owns review rounds and the final report.
+- [`do`](skills/do/SKILL.md) (**user-invoked**, `/do <task>`): runs a task through a playbook: `build` for one change, `fleet` for several items at once (changes ship as their own PRs; prototypes and research wait for your pick), `research` for questions that need evidence gathered, and `general` for everything else. The playbook's steps go into the task list word for word, skipped steps stay visible with a reason, and the playbook owns review rounds and the final report.
 - [`implement`](skills/implement/SKILL.md): settles a change's decisions instead of asking, proves it with before and after evidence, and reports it. The `do` build playbook calls it for every change.
 - [`research`](skills/research/SKILL.md): answers a question that needs evidence gathered first. Pins the decision and constraints, starts from your own repos and machine, keeps git-excluded notes with how far each source was read, tests the deciding claim, and reports a verdict without changing anything. The `do` research playbook calls it.
 - [`prototype`](skills/prototype/SKILL.md): builds switchable variants of a screen or behavior next to the current one, checks each, and converges with you over rounds until you pick a direction. Web and terminal for now.
