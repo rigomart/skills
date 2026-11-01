@@ -16,6 +16,7 @@ Most skills load on their own when a task matches their description. The ones ma
 ### Ship and track work
 
 - [`ship-changes`](skills/ship-changes/SKILL.md): branches, commits, pushes and opens a PR or a stack of PRs in the project's conventions. Picks a body template by change type, attaches screenshots of visible changes through `gh`, and lands through GitHub auto-merge.
+- [`recall`](skills/recall/SKILL.md): answers "status?", "what's pending" and "where did we leave this". Checks what's running, open PRs and issues, the release history and past Claude Code and Codex chats from every worktree of the repo, then briefs you in plain terms: where it stands, each thread's state, what needs you and what the agent can do, and the next move.
 - [`babysit-pr`](skills/babysit-pr/SKILL.md): watches a PR until its checks pass, using T3 Code's PR watcher or a bundled `gh` script. Fixes failures caused by the PR's own diff, reruns a flake once, and hands the PR back green for your review. It never merges.
 - [`file-issue`](skills/file-issue/SKILL.md): writes and files GitHub issues in the repo's conventions. Reads its labels and recent issues, searches for duplicates, and writes one issue per PR or a spec with sub-issues, each with a checkable outcome.
 
