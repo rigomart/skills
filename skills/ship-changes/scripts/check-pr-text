@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# check-pr-text: check a PR body (or a commit message) before it goes public.
+#
+#   check-pr-text <file>...     (- reads stdin)
+#
+# For each file, prints one FAIL line per problem and what to do about it:
+#   - over 300 words, not counting code blocks and images
+#   - over 4 images
+#   - a home-directory path, an email address, or a link to an agent session
+#
+# Exit codes
+#   0  every file passes
+#   1  at least one FAIL line was printed
+#   2  bad input
+set -uo pipefail
+
+max_words=300
+max_images=4
+
+if [ $# -eq 0 ]; then
+  echo "usage: check-pr-text <file>... (- for stdin)" >&2
+  exit 2
+fi
+
+status=0
+for file in "$@"; do
+  if [ "$file" = "-" ]; then
+    text=$(cat)
+    name="stdin"
+  elif [ -r "$file" ]; then
+    text=$(cat "$file")
+    name="$file"
+  else
+    echo "check-pr-text: cannot read $file" >&2
+    exit 2
+  fi
+
+  prose=$(printf '%s\n' "$text" |
+    awk '/^[[:space:]]*(```|~~~)/ { fence = !fence; next } !fence' |
+    sed -E 's/!\[[^]]*\]\([^)]*\)//g; s/<img[^>]*>//g')
+  words=$(printf '%s\n' "$prose" | tr -s '[:space:]|' '\n' | grep -c '[[:alnum:]]')
+  if [ "$words" -gt "$max_words" ]; then
+    echo "FAIL $name: $words words, over $max_words. Cut each section to its template's ceiling."
+    status=1
+  fi
+
+  images=$(printf '%s\n' "$text" | grep -oE '!\[[^]]*\]\(|<img[ >]' | wc -l | tr -d ' ')
+  if [ "$images" -gt "$max_images" ]; then
+    echo "FAIL $name: $images images, over $max_images. Keep the ones that show the change; drop extra widths and themes."
+    status=1
+  fi
+
+  private=$(printf '%s\n' "$text" | grep -noE \
+    -e '(/Users|/home)/[A-Za-z0-9._-]+' \
+    -e '[A-Za-z]:\\Users\\[A-Za-z0-9._-]+' \
+    -e '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' \
+    -e 'claude\.ai/code/session_[A-Za-z0-9]+' \
+    -e 't3-citation://[^ )]+' |
+    grep -vE '@(users\.)?noreply\.' |
+    grep -vE '/home/linuxbrew' || true)
+  if [ -n "$private" ]; then
+    while IFS= read -r hit; do
+      echo "FAIL $name:${hit%%:*}: private detail \"${hit#*:}\". Remove it, or replace a path with one relative to the repo."
+    done <<< "$private"
+    status=1
+  fi
+done
+
+exit $status

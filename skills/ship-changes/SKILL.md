@@ -10,7 +10,7 @@ description: Branch, commit, push and open a PR or a stack in the project's conv
 Before shipping, learn the project's own rules and follow them over the defaults here:
 
 - `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`: commit style, PR rules, required checks, anything they ask you to surface in a PR.
-- A PR template: `.github/pull_request_template.md`, `.github/PULL_REQUEST_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, or `docs/PULL_REQUEST_TEMPLATE.md`.
+- A PR template, under `.github/` or at the root.
 - `git log --oneline -20`: the commit convention actually in use.
 - The CI workflows (`.github/workflows/*.yml` or the project's CI config): the commands a PR must pass.
 - The default branch: `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`. This skill calls it `main`.
@@ -38,7 +38,7 @@ git rev-parse --show-toplevel
 
 When working in a worktree, do not assume the branch should be based on `main`. Treat the checked-out worktree branch as the base unless the user explicitly asks to rebase, retarget, or start over from `main`.
 
-Part of the branch may already have landed through a squash merge, which `git log origin/main..HEAD` still lists. Check each commit ahead of `main` with `gh pr list --state merged --search <sha>`. When the lower ones already merged, put only the rest on a new descriptive branch from `origin/main` with `git rebase --onto origin/main <last-merged-sha> <new-branch>`, and leave the worktree's branch as it is.
+When an earlier PR from this branch already merged, follow [references/stack.md](references/stack.md) to put only the rest on a new branch.
 
 If the current branch is already a descriptive feature branch for the work being shipped, keep using it. If it is `main`, `master`, or any name that isn't about the change, such as one a tool generated (`t3/fe15b4fb`, `claude/…`, `codex/…`) or a generic one (`wip`, `fix`), create a new descriptive branch from the current `HEAD`:
 
@@ -87,7 +87,7 @@ Use a conventional PR title matching the main commit or the overall change. Open
 feat(items): add inline item editing
 ```
 
-The body is a briefing for a reviewer who has the diff. The title's type picks its template; open that file before writing the body. When the project doesn't use Conventional Commits, use the type the change would get under them. A change that mixes types takes the title's type, which already names the main change.
+The body is the record of what shipped and the decisions in it, for a reader who will not open the diff. The title's type picks its template; open that file before writing the body. When the project doesn't use Conventional Commits, use the type the change would get under them. A change that mixes types takes the title's type, which already names the main change.
 
 | Title type | Template |
 | --- | --- |
@@ -103,9 +103,12 @@ When the project has its own PR template, its headings replace these; fill them 
 
 Every template, in every PR:
 
-- Write each section the template has; don't add or drop any. Screenshots is the one conditional section, and its template says when.
-- No `## Summary` or `## Test plan` boilerplate, file-by-file lists, or SHAs. If a command was not run, say why instead of listing it.
-- Compromises, including any the project's agent instructions ask you to surface, go in Tradeoffs, Fix, or Blast radius, whichever the template has.
+- Write each section the template has, at the length its guidance gives, which is a ceiling. Don't add or drop any section. Screenshots is the one conditional section, and its template says when.
+- Describe what changed as a user or a caller sees it, never file by file. Leave out SHAs.
+- Verification says how the change was driven and what it showed. The PR's checks already show CI's commands; name a command only when CI does not run it.
+- Choices you made without the developer, including compromises the project's agent instructions ask you to surface, go in Decisions, in Fix for a `fix`, and in Why when the template has neither.
+- PR and commit text is public. Describe evidence from past sessions by what the agent did, as a pattern ("in three sessions, the agent merged on 'ship it'"). Leave out the developer's own words, and their other projects, tools, machine and accounts.
+- Run [scripts/check-pr-text](scripts/check-pr-text) by its absolute path on the body file before opening the PR, and fix every line it prints.
 - Run the `unslop` skill on the title, the body and each commit message body if it is installed, before you commit or open the PR.
 - End with the closing issue reference when the work is issue-backed (see Closing issues).
 
@@ -117,9 +120,7 @@ Take, check, and attach them as [references/screenshots.md](references/screensho
 
 ### Closing issues
 
-The PR body must reference the issue it closes when the work is tied to an issue. Look for the issue number in the session context, the user's request, branch name, commit messages, recent issue discussion, or the diff itself.
-
-Use GitHub closing syntax, such as `Closes #123`, so merging the PR closes the issue automatically. If an issue appears relevant but cannot be identified, ask the user before creating the PR instead of guessing. If the change is clearly not issue-backed, such as a small agent-instruction cleanup requested directly in chat, omit the closing line and continue creating the PR.
+Work tied to an issue ends the body with `Closes #123`; take the number from the request, the branch name or the commits. When an issue seems to exist but you can't find its number, ask before opening the PR.
 
 ## Landing
 

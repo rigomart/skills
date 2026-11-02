@@ -36,3 +36,7 @@ gh pr merge <child-pr> --squash --auto
 ```
 
 `<old-parent-tip-sha>` is the parent branch's last commit, which `gh pr view <parent-pr> --json headRefOid` still reports after the merge. If the rebase hit conflicts, re-run verification on the child before arming it. Repeat up the stack, one PR at a time.
+
+## A branch that partly landed
+
+A squash merge leaves the merged commits in `git log origin/main..HEAD`. Check each commit ahead of `main` with `gh pr list --state merged --search <sha>`. When the lower ones already merged, put only the rest on a new descriptive branch from `origin/main` with `git rebase --onto origin/main <last-merged-sha> <new-branch>`, and leave the worktree's branch as it is.

@@ -1,14 +1,14 @@
 # Maintenance PR template
 
-Write every section. Replace the guidance under each heading with the content.
+Write every section. Replace the guidance under each heading with the content; the length it gives is a ceiling.
 
 ```md
 ## Why
-What this fixes or unblocks.
+One or two sentences: what this fixes or unblocks.
 
-## Scope
-What changed: dependencies and versions, workflows, config, tests added.
+## What changed
+Up to three bullets: dependencies and versions, workflows, config, tests added.
 
 ## Verification
-The CI run, local commands, or the test that failed before and passes now.
+One or two bullets: the CI run, or the check that failed before and passes now.
 ```

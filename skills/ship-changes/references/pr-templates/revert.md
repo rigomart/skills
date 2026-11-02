@@ -1,14 +1,14 @@
 # Revert PR template
 
-Write every section. Replace the guidance under each heading with the content.
+Write every section. Replace the guidance under each heading with the content; the length it gives is a ceiling.
 
 ```md
 ## Why
-What broke, with a link to the evidence.
+One or two sentences: what broke, with a link to the evidence.
 
 ## Reverts
 #<pr>, and anything else that goes out with it.
 
 ## Follow-up
-What must happen before it relands.
+One or two sentences: what must happen before it relands.
 ```

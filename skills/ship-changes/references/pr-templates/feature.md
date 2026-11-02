@@ -1,24 +1,22 @@
 # Feature PR template
 
-Write every section. Replace the guidance under each heading with the content.
+Write every section. Replace the guidance under each heading with the content; the length it gives is a ceiling.
 
 ```md
 ## Why
-One or two short paragraphs: the problem and the approach.
+One to three sentences: the problem, and the approach.
 
-## Scope
-- Real symbols and paths that carry the change
-- What is deliberately left out
+## What changed
+Up to five bullets, in terms of what a user or a caller can now do or see. End with what was deliberately left out, when something was.
 
-## Tradeoffs
-Alternatives a reviewer would ask about, and why not. If none were considered, say so in one line.
+## Decisions
+Up to three bullets: choices you made without the developer, each with its reason. "None." when every choice was theirs.
 
 ## Blast radius
-One to three sentences: what this touches, what could go wrong, and how it would show up.
+One or two sentences: what could break, and how it would show up.
 
 ## Verification
-- The CI commands you ran locally
-- How the change was driven in the real app, and what it showed
+Up to three bullets: how the change was driven, and what it showed.
 
 ## Screenshots
 | Before | After |
