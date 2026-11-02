@@ -33,6 +33,7 @@ Most skills load on their own when a task matches their description. The ones ma
 ### Write and test skills
 
 - [`author-skills`](skills/author-skills/SKILL.md): writes, revises and reviews skills and playbooks. Holds the design rules (one owner per rule, subtract before you add, encode what must hold in structure, a repeat before a rule, process in playbooks and judgment in skills, references to whole files only) and the standard for descriptions, layout and prose. Writing checks a skill is the right fix, validates it with a script and proves it on a cold agent. Reviewing reads the text, its overlap with other skills, and past Claude Code, Codex and Cursor sessions with and without it, then proposes what to keep, generalize, move or cut.
+- [`retro`](skills/retro/SKILL.md) (**user-invoked**, `/retro`, or `/retro <session>` for a past one): reviews a session for what slowed or misled the agent, and proposes fixes to its environment: checks, tool and access changes, `AGENTS.md` pointers, review rules, skill changes and cuts to steering files. Counts each finding across your other sessions before proposing it, prefers a check over prose, and makes only the fixes you pick.
 - [`create-verification-skill`](skills/create-verification-skill/SKILL.md) (**user-invoked**): generates a project's `verify-<app>` skill, so agents prove each user-visible change in the real app on an isolated instance. Web (agent-browser) and macOS (XCUITest) for now.
 
 ## Install
