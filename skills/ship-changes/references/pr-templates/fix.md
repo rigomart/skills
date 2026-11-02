@@ -1,24 +1,22 @@
 # Fix PR template
 
-Write every section. Replace the guidance under each heading with the content.
+Write every section. Replace the guidance under each heading with the content; the length it gives is a ceiling.
 
 ```md
 ## Symptom
-What the user or the system saw, and when.
+One or two sentences: what the user or the system saw, and when.
 
 ## Root cause
-What was wrong, and where.
+One or two sentences: what was wrong, and where.
 
 ## Fix
-The change, and why it sits at the cause rather than the symptom. Alternatives a reviewer would ask about, and why not.
+Up to three bullets: the change, and any choice you made without the developer, with its reason.
 
 ## Blast radius
-What else depends on the changed code, and how a regression would show up.
+One sentence: what else depends on the changed behavior, and how a regression would show up.
 
 ## Verification
-- The repro: fails on the base, passes on this head
-- The regression test, when one was added
-- The CI commands you ran locally
+Up to three bullets: the repro failing on the base and passing on this head, and the regression test when one was added.
 
 ## Screenshots
 | Before | After |

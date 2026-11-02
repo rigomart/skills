@@ -1,11 +1,11 @@
 # Docs PR template
 
-Write every section. Replace the guidance under each heading with the content.
+Write every section. Replace the guidance under each heading with the content; the length it gives is a ceiling.
 
 ```md
 ## Why
-What was missing, wrong, or unclear.
+One or two sentences: what was missing, wrong, or unclear.
 
-## Scope
-The pages or sections changed.
+## What changed
+Up to three bullets: the pages or sections changed.
 ```
