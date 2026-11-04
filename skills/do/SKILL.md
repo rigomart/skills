@@ -19,15 +19,15 @@ You run the task through one playbook. The playbook owns the order of the work, 
 
 When the first word after `/do` names a playbook, use it. Otherwise pick from the request.
 
-Read the playbook, then open your reply with one short sentence that names it, without the reason: `Using the general playbook.`
+Read the playbook you picked.
 
 ## 2. Copy the steps
 
-Open the playbook and add each numbered step to the session's task list as its own item, the text copied word for word, before any item of your own. Use the session's task-list or plan tool. Without one, end every reply with one line that says where the steps stand: `Steps: 1–5 done, 6 skipped (one-line change), 7–9 to do.`
+Open the playbook and add each numbered step to the session's task list as its own item, the text copied word for word, before any item of your own. Use the session's task-list or plan tool. Without one, keep the list as a checklist in `.evidence/<task>/steps.md`, excluded from git through the file `git rev-parse --git-path info/exclude` prints.
 
 Then work the list in order. Mark each item done when its step is done. A step you decide not to do keeps its text and gets `skip: <reason>` after it, so the user sees what was skipped and why. A skipped step goes back to to-do when the user later asks for it.
 
-Done when the list holds every step of the playbook, before you change any other file. Without a task-list tool, done when every reply ends with the steps line.
+Done when the list holds every step of the playbook, before you change any other file.
 
 ## 3. Stay on
 
@@ -38,4 +38,7 @@ The playbook stays on for the rest of the session. On each new message:
 
 ## Reply
 
-Every playbook ends with a **Reply** line that names what its report holds. Write it short and plain, for a user who did not watch the work: what they now see or can do comes first, and each claim carries its evidence or says it is unproven.
+Every playbook ends with a **Reply** line that names what its report holds. Write every message to the user for a tech lead who did not watch the work:
+
+- A question from the user is answered in the next reply, at the top, even while other work runs. Wrong: "the full answer on B will come with the final summary".
+- The message holds where things stand and what needs the user. The work that got there (narration of steps, the playbook's name, which steps are done, test counts) stays in the task list, the evidence and the PR.

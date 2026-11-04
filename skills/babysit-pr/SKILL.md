@@ -56,4 +56,4 @@ Hand back when the PR is done, when a failure is one to report, or when the PR m
 
 Review comments and reviews are not part of babysitting. List the ones that arrived, and act on them only when the user asks.
 
-**Reply:** the PR link and its state (`green on <sha>, ready for your review`, or what blocks it), the checks' result, each fix pushed with the failure it fixed, each rerun and why, review comments that arrived, and whether the branch is behind its base.
+**Reply:** the PR link and its state in one line: `ready for your review`, or what blocks it and what you need from the user. Then only what changes their review: each fix that changed behavior, with the failure it fixed; review comments that arrived; the branch being behind its base. Check counts, SHAs and reruns that passed stay out. A delegated child reports to its parent with the head SHA, the fixes pushed and each rerun.

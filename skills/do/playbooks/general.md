@@ -7,4 +7,4 @@ You own the answer or the chore.
 3. Otherwise do the chore with the smallest change that does it, and check that it worked.
 4. When the user picks a change to make, switch to the `build` playbook. When answering needs outside sources, measurements or more than a read or two, switch to the `research` playbook.
 
-**Reply:** the answer or what the chore changed, its evidence, and any decision left to the user.
+**Reply:** the answer or what the chore changed, its evidence in a line or a link, and any decision left to the user.
