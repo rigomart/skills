@@ -48,13 +48,12 @@ Test the claim the recommendation rests on: run it in a scratch directory outsid
 
 ## Report
 
-Short and plain, and change nothing:
+Write it for a tech lead who wants the answer and what needs them, on one screen, and change nothing:
 
-- **Verdict:** one per question, in the order asked.
-- **Evidence:** behind each verdict, with how far it was checked; a table where options compare.
-- **Open:** contradictions, what is `not verified`, and what you couldn't find.
-- **Decisions:** each one left to the user carries how it works today, the trade-off and your default.
-- **Next:** the step for the user to approve.
+1. **Verdict:** one per question, in the order asked, each with the one or two facts it rests on. Where options compare, a short table.
+2. **Needs you:** each decision left to the user, opening with one plain sentence on what it's about, then how it works today, the trade-off and your default; then the next step for the user to approve.
+3. **Open**, up to three: the contradictions, `not verified` claims and gaps that could change the verdict.
+4. One link: the notes file, which holds the rest of the evidence and how far each source was read.
 
 Answer the question asked; ideas beyond it get one line. Define any term the user may not know.
 
