@@ -1,0 +1,1 @@
+Add a `tasks count` command that prints how many tasks are still open.
