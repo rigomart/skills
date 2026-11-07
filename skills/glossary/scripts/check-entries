@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# check-entries: check each entry in a glossary file against the format.
+#
+#   check-entries [file]     (default: GLOSSARY.md)
+#
+# An entry is a **Term** outside the Relationships and Flagged ambiguities
+# sections, up to the next entry or heading. Its definition is its text without
+# the _Avoid_ and _Code_ lines.
+# Prints one FAIL line per problem and what to do about it:
+#   - a definition over two sentences
+#   - a code span, file path, file name or environment variable in a definition
+#   - a data format or type in a definition (JSON, array, boolean, enum...)
+#
+# Exit codes
+#   0  every entry passes
+#   1  at least one FAIL line was printed
+#   2  bad input
+set -uo pipefail
+
+file=${1:-GLOSSARY.md}
+[ -r "$file" ] || { echo "check-entries: cannot read $file" >&2; exit 2; }
+
+perl -CSD -e '
+  use strict; use warnings;
+  my $file = shift; open my $fh, "<:encoding(UTF-8)", $file or die;
+  my ($sec, $cur, $fails) = ("", undef, 0);
+  my $vocab = qr/\b(JSON|YAML|CSV|array|boolean|enum|integer|null|nullable|foreign key|primary key|hash ?map|struct)s?\b/i;
+  sub check {
+    my $e = shift; return unless $e;
+    (my $d = $e->{def}) =~ s/\b(e\.g|i\.e|etc|vs)\./x/gi;
+    my $n = () = $d =~ /[.!?](\s|$)/g;
+    my @p;
+    push @p, "$n sentences: keep it to one or two that say what it is, not how it works" if $n > 2;
+    push @p, "a code span: name the code only on a _Code_ line, and only when it differs from the term" if $e->{def} =~ /`/;
+    push @p, "a file path or name: say what the thing is, not where it lives"
+      if $e->{def} =~ m{(~/|\b[\w.-]+/[\w.-]+|\b[\w-]+\.(m?js|cjs|ts|tsx|jsx|json|ya?ml|toml|md|py|rb|go|rs|sql|sh)\b)};
+    push @p, "an environment variable: leave configuration out" if $e->{def} =~ /\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/;
+    push @p, "a data format or type (\"$1\"): describe the concept as a user or the owner sees it" if $e->{def} =~ $vocab;
+    for (@p) { print "FAIL $file:$e->{line}: $e->{term}: $_\n"; $fails++ }
+  }
+  while (my $l = <$fh>) { chomp $l;
+    if ($l =~ /^(#{1,6})\s+(.*)/) { my ($h, $t) = ($1, $2); check($cur); undef $cur; $sec = lc $t if length($h) == 2; next }
+    next if $l =~ /^\s*$/;
+    next if $sec =~ /relationship|ambigu|flag|open question/;
+    if ($l =~ /^\s*(?:[-*]\s+)?\*\*([^*]+?)\*\*\s*[:\x{2014}-]?\s*(.*)$/) {
+      check($cur); $cur = {term => $1, def => $2, line => $.}; $cur->{term} =~ s/:$//; next }
+    next unless $cur;
+    next if $l =~ /^\s*[-*]?\s*_(Avoid|Code)_/i;
+    $cur->{def} .= " $l";
+  }
+  check($cur);
+  exit($fails ? 1 : 0);
+' "$file"

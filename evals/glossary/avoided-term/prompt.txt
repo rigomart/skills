@@ -1,0 +1,1 @@
+I want a command that moves a task to another folder, and marks it resolved in the same step when you pass `--resolve`. Sketch the command and its output before we build anything.

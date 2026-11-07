@@ -31,7 +31,7 @@ When none exists, draft one; do not wait for terms to come up one at a time.
 2. **Find the collisions.** These are the entries worth writing: one concept with several names (the UI says "Project", the code says `Workspace`, the docs say "space"), one word with several meanings ("account" for a login and for a paying organization), and code-only words that leak into issues or UI copy.
 3. **Draft** the entries a newcomer would get wrong, usually 5 to 20 to start, in the format. For each collision, take a default and say why in a clause ("the UI is what users read, so Project wins; `Workspace` stays the code name until a rename").
 4. **Ask** about the collisions in one round, each with your default first. Which name is canonical is the user's call; how the code and docs use each word is yours to find out.
-5. **Write** `GLOSSARY.md`, then wire it in (step 4).
+5. **Write** `GLOSSARY.md`, run [scripts/check-entries](scripts/check-entries) on it by its absolute path, fix every line it prints, then wire it in (step 4).
 
 Done when every collision you found is either settled (one term, the others under `_Avoid_`) or listed under Flagged ambiguities with what is still open.
 
@@ -44,7 +44,7 @@ Whenever terms are in play (designing, planning, naming, reviewing), hold the co
 - **Force the boundary with a case.** When the relation between two concepts is unclear, invent a concrete edge case that makes someone decide: "Can one Order belong to two Customers? What is a Draft once it is sent?"
 - **Check the code.** When someone states how a concept behaves, check that the code agrees, and surface any contradiction.
 - **Name new concepts plainly.** Reuse an existing term before coining one. Otherwise pick the plainest familiar word that does not mislead, and check it against every entry and every `_Avoid_` list.
-- **Record as you go.** When a term settles, edit `GLOSSARY.md` right then rather than batching edits for the end. A term that will not settle goes under Flagged ambiguities.
+- **Record as you go.** When a term settles, edit `GLOSSARY.md` right then rather than batching edits for the end, and run `scripts/check-entries` again. A term that will not settle goes under Flagged ambiguities.
 
 ## 4. Wire it in
 
