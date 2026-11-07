@@ -102,7 +102,9 @@ Carry these into the generated skill, in the app's own terms:
 
 ## 7. Prove the skill cold
 
-A generated skill that was never followed is a draft. Hand it to a fresh agent with no context beyond the repo and a small real verification task ("prove that X shows Y after Z"), and watch where it stumbles: a missing step, a wrong handle, an unclear rule. Fix the skill, not the agent's run. If you cannot spawn an agent, follow the skill yourself from a new shell, exactly as written, and say so.
+A generated skill that was never followed is a draft. Hand it to a fresh agent on the smallest model the session can spawn, in its newest version, at effort `high` or the nearest level the spawn tool offers. Give it no context beyond the repo and a small real verification task ("prove that X shows Y after Z"), and watch where it stumbles: a missing step, a wrong handle, an unclear rule. Fix the skill, not the agent's run. The smallest model stands in for the weakest one expected to follow `verify-<app>`, which runs often, mid-task, on whatever model is doing the work.
+
+When the spawn tool cannot set the model or the effort, spawn anyway and take what it gives. If you cannot spawn an agent at all, follow the skill yourself from a new shell, exactly as written. The report names the model and effort the cold run actually used, and any fallback.
 
 The run must cover: start the instance, check its health, drive the checks of one feature file, capture evidence and the PR images, tear down, and confirm the evidence still exists afterwards. Run the cleanup after every failed attempt too, so broken runs do not strand processes and ports. If you proved it in a stand-in for the real target, list every setup step the stand-in did that the target will not.
 
@@ -111,4 +113,4 @@ The run must cover: start the instance, check its health, drive the checks of on
 - Gitignore the instance directory and the evidence.
 - Point the project's agent instructions (`AGENTS.md`, `CLAUDE.md`) at the skill in one line: a user-visible change is proven in the real app per `verify-<app>`, and a change to a feature's behavior updates its feature file; lint and unit tests do not substitute for it.
 - Do not add end-to-end tests or a CI job. That is the user's decision; if they ask, it is a separate piece of work.
-- Report what you generated, the cold run and what it changed, the features not covered, and the decisions left to the user.
+- Report what you generated, the cold run (the model and effort it ran on, and what it changed), the features not covered, and the decisions left to the user.
