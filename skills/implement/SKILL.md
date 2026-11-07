@@ -1,6 +1,6 @@
 ---
 name: implement
-description: Settle a change's decisions, prove it with before and after evidence, and report it. Use when asked to implement, build, fix, refactor or speed something up.
+description: Settle a change's decisions, prove it with before and after evidence, and report it. Use before any code edit, however small, when asked to implement, build, add, fix, refactor or speed something up, or to fix an issue.
 ---
 
 # Implement
@@ -11,7 +11,7 @@ How to build it is your call. This covers when to ask, what to prove, how big th
 
 An issue number or URL is the request: read its body and comments with `gh issue view <n> --json title,body,comments` (outside a terminal, `--comments` prints the comments only).
 
-Settle what the code, docs, research or a quick experiment can settle, and record each choice as a decision. Ask only what none of those answer and a wrong guess would be costly to undo: a data model or public API others build on, a direction the rest of the work depends on. A choice you could change in a line later (copy, values, placeholder data, what's left out of scope) is a decision, not a question. Ask once, before building, numbered, recommendation first, and keep working on the rest. Open each question with one plain sentence on what it's about and why it matters, naming things by what they do rather than only by an issue number or internal name, and put the questions at the top of the message.
+Settle what the code, docs, research or a quick experiment can settle, and record each choice as a decision. Ask only what none of those answer and a wrong guess would be costly to undo: a data model or public API others build on, a direction the rest of the work depends on. An optional field or argument added to one counts: once others use its shape, changing it breaks them. A choice you could change in a line later (copy, values, placeholder data, what's left out of scope) is a decision, not a question. Ask once, before building, numbered, recommendation first, and keep working on the rest. Open each question with one plain sentence on what it's about and why it matters, naming things by what they do rather than only by an issue number or internal name, and put the questions at the top of the message.
 
 ## Prove it
 
@@ -29,7 +29,7 @@ The smallest change that does what was asked, on the current branch. Fix what th
 
 Write it for a tech lead who didn't watch the work: where it stands and what needs them, on one screen.
 
-1. **Result**, one or two sentences: what works now that didn't, and whether it's ready (uncommitted, PR open, blocked). Say it's better than before only with the before and after. For a visible change, one after image.
+1. **Result**, one or two sentences: what works now that didn't, and whether it's ready (uncommitted, PR open, blocked). Say it's better than before only with the before and after. Name the checks that passed without counting them: "tests and lint pass", not "5 tests pass". For a visible change, one after image.
 2. **Needs you:** each step only the user can take, before or after merging (a merge, a secret, a migration). When there is none, write `Nothing needs you.`
 3. **Risks**, up to three: what's unproven, a check that failed or couldn't run, a real review finding left unfixed. Each says what could go wrong for a user.
 4. One link: the PR, or `evidence.md`.
