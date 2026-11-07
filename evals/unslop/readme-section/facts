@@ -1,0 +1,11 @@
+one per project|each project|per project
+every (command|run)
+(whole|entire|full) file
+last write wins|last (one|write|command) (to finish |to write )?wins
+\b(may|might|can|could)\b.{0,30}\blost|\blose
+dropbox
+syncthing
+\bgit\b
+(not|n't|never) lock
+(no|other) commands? (is |are )?(running|runs)|while .{0,30}(idle|nothing)
+500 tasks[^.]{0,30}40 ?KB|40 ?KB[^.]{0,30}500

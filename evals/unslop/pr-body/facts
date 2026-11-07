@@ -1,0 +1,10 @@
+stderr
+usage error
+\b(may|might|could)\b
+stack trace
+two tests|2 tests
+(exit|code)[^.]{0,30}\b1\b[^.]{0,80}crash|crash[^.]{0,80}\b1\b
+missing id[^.]{0,30}\b3\b
+usage error[^.]{0,10}\(?(code|exit code) 2
+only (if|when|for)[^.]{0,40}pars(e|es|ing) the old stack trace
+!(never|not|n't) pars
