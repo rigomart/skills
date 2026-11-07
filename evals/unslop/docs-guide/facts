@@ -1,0 +1,24 @@
+node(\.js)? 24 or (later|newer|above)|node(\.js)? 24\+
+npm link
+no (dependencies|deps)
+never reused|not reused|(isn't|is not|aren't|are not) reused
+(4 or higher|4 or above|at least 4)
+not (yet )?done|(isn't|is not|aren't|are not) (yet )?done|unfinished|open tasks
+(not|n't|never) deleted|stay in the file|remain in the file|kept in the file
+exactly one id|one id (at a time|per (command|call|run))|only one id
+nothing (in the file )?changes|file (is )?(left )?unchanged|(doesn't|does not) change the file
+~/\.tasks\.json
+syntax error
+one (list )?per project
+\.envrc
+(empty list|no tasks)
+unknown command[^.]{0,80}\b2\b
+missing id[^.]{0,60}\b1\b
+\b(may|might|could)\b[^.]{0,40}(change|future)
+dropbox
+syncthing
+last write wins|last (one|write|machine) (to (finish|write) )?wins
+\b(may|might|can|could)\b.{0,40}\blost|\blose
+(not|n't|never) lock
+no (other )?commands? (is |are )?(running|runs)|while .{0,30}(idle|nothing)
+two machines at once|(on|from) two machines at the same time|both machines at once

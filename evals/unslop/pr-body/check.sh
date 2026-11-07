@@ -10,6 +10,7 @@ check_no_new_numbers "$src" "$out"
 check_facts "$(dirname "${BASH_SOURCE[0]}")/facts" "$out"
 check_headings_kept "$src" "$out"
 check_other_files_untouched pr-body.md
+check_cold_reader no
 check_report_names_scan
 check_report_names_cold_reader
 check_report_clean "$src"

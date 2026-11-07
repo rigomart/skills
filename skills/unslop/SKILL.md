@@ -64,9 +64,9 @@ bash scripts/scan.sh <file>...
 pbpaste | bash scripts/scan.sh -
 ```
 
-It skips fenced code and inline code, prints `<file>:<line>: <rule>: <match>` per hit, and exits 1 if anything was flagged. Each word hit is a candidate: keep it when it is the plain word for the thing (a "robust" estimator in statistics, a "landscape" photo). Em dashes, curly quotes, bold-label bullets and chat phrases have no such exception. Text you're working on in the reply itself goes through the scan via a temp file or stdin.
+It skips fenced code and inline code, prints `<file>:<line>: <rule>: <match>` per hit, and exits 1 if anything was flagged. After each file's hits, one line counts its words outside fenced code and says whether it needs a cold reader. Each word hit is a candidate: keep it when it is the plain word for the thing (a "robust" estimator in statistics, a "landscape" photo). Em dashes, curly quotes, bold-label bullets and chat phrases have no such exception. Text you're working on in the reply itself goes through the scan via a temp file or stdin.
 
-The scan sees words, not shapes or rhythm. After it passes, reread the text once from the top as its reader would. For long text that goes out (docs, a README, a post), also give a fresh subagent only the rewritten text, and ask it to quote each sentence it had to read twice or that reads machine-written. Pick its model with the `subagents` skill if it is installed. Fix what it quotes.
+The scan sees words, not shapes or rhythm. After it passes, reread the text once from the top as its reader would. When the scan says `run a cold reader` (the text is over 400 words), also give a fresh subagent only the rewritten text, and ask it to quote each sentence it had to read twice or that reads machine-written. Pick its model with the `subagents` skill if it is installed. Fix what it quotes.
 
 ## Report
 

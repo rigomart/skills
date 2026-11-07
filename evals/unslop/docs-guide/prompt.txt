@@ -1,0 +1,1 @@
+Unslop docs/guide.md before I publish it. Edit the file in place.
