@@ -31,6 +31,8 @@ claude-haiku-5-5 xhigh
 
 - The fixture repo and a bare `origin` are built fresh in a temp dir by the scenario's `setup.sh`.
 - The skill, and the scenario's extra skills, are copied in as project skills, and `claude` runs with `--setting-sources project`, so your user skills, plugins, hooks and `CLAUDE.md` don't load.
+- `--strict-mcp-config` with no `--mcp-config` loads no MCP servers, so your claude.ai connectors and other MCP servers stay out. `--setting-sources project` alone still loads the connectors.
+- The scheduling tools are hidden: `ScheduleWakeup`, `CronCreate`, `CronDelete`, `CronList` and `RemoteTrigger`. A headless run can't be woken later, and `ScheduleWakeup`'s description invites a background heartbeat that small models sometimes act on. `RemoteTrigger` would also create routines on your account. `Monitor` stays, because it works in a headless run and the `babysit-pr` checks count it.
 - The task-list tools (`TaskCreate`, `TaskUpdate`) are on, as in an interactive session; `claude -p` hides them by default.
 - `gh` on `PATH` is [lib/fake-gh](lib/fake-gh): it answers from `state.json`, refuses `pr create` for an unpushed branch, and logs every call to `calls.jsonl`. Real `gh` gets an empty config dir and no token.
 - Permissions are bypassed inside the temp dir. Pushes go to the local bare repo.
