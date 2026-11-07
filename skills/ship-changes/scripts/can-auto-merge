@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# can-auto-merge: say whether `gh pr merge --auto` would wait for CI on a branch,
+# can-auto-merge: say whether `gh pr merge --auto` would wait for CI on a PR,
 # and which merge methods the repository allows, in one line.
 #
-#   can-auto-merge [<branch>] [--repo owner/name]
+#   can-auto-merge [<pr> | <branch>] [--repo owner/name]
 #
-# <branch> is the PR's base, the default branch when omitted. Without --repo, gh
-# uses the current checkout. Required checks come from rulesets and from classic
-# branch protection, both readable without admin rights.
+# <pr> is the PR's number (7, #7) or URL; the script checks the PR's base. A
+# <branch> is checked as given, and the default branch when both are omitted.
+# Without --repo, gh uses the current checkout. Required checks come from
+# rulesets and from classic branch protection, both readable without admin rights.
 #
 # Exit codes
 #   0  auto-merge is allowed and the branch has required checks: arm it
@@ -15,7 +16,7 @@
 #   2  bad input, or the repository or branch cannot be read
 set -uo pipefail
 
-usage="usage: can-auto-merge [<branch>] [--repo owner/name]"
+usage="usage: can-auto-merge [<pr> | <branch>] [--repo owner/name]"
 branch=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -32,6 +33,11 @@ settings=$(gh api "repos/$repo" \
   --jq '[.default_branch, (.allow_auto_merge | tostring), ([["squash", .allow_squash_merge], ["merge", .allow_merge_commit], ["rebase", .allow_rebase_merge]] | map(select(.[1]) | .[0]) | join(","))] | @tsv' 2>/dev/null) \
   || { echo "can-auto-merge: cannot read settings of $repo"; exit 2; }
 IFS=$'\t' read -r default auto methods <<<"$settings"
+if printf '%s' "$branch" | grep -Eq '^#?[0-9]+$|/pull/[0-9]+'; then
+  pr="${branch#\#}"
+  branch=$(gh pr view "$pr" --repo "$repo" --json baseRefName --jq .baseRefName 2>/dev/null) \
+    || { echo "can-auto-merge: cannot read PR $pr of $repo"; exit 2; }
+fi
 branch="${branch:-$default}"
 
 classic=$(gh api "repos/$repo/branches/$branch" \

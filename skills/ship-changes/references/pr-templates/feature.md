@@ -24,4 +24,4 @@ Up to three bullets: how the change was driven, and what it showed.
 | ![Inbox badge shows 3 after archiving one of 3](./.verify/main/evidence/inbox-badge-before.png) | ![Inbox badge shows 2 after archiving one of 3](./.verify/main/evidence/inbox-badge-after.png) |
 ```
 
-Screenshots: required when the change is visible, absent otherwise.
+Screenshots: images only, required when the change shows on a screen. Leave the section out otherwise, including for CLI output, which goes in Verification as a text block.

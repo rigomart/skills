@@ -24,4 +24,4 @@ Up to three bullets: the repro failing on the base and passing on this head, and
 | ![The bug, shown](./.verify/...) | ![The same state, fixed](./.verify/...) |
 ```
 
-Screenshots: only when the symptom shows on screen. Before is the bug, after is the same state fixed.
+Screenshots: images only, and only when the symptom shows on a screen; CLI output goes in Verification as a text block. Before is the bug, after is the same state fixed.
