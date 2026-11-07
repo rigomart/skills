@@ -27,6 +27,7 @@ start=$(date +%s)
   claude -p "$(cat "$sdir/prompt.txt")" \
     --model "$EVAL_MODEL" --effort "$EVAL_EFFORT" \
     --setting-sources project --settings '{"includeCoAuthoredBy":false}' --permission-mode bypassPermissions \
+    --strict-mcp-config --disallowedTools ScheduleWakeup CronCreate CronDelete CronList RemoteTrigger \
     --output-format stream-json --verbose --no-session-persistence \
     --max-budget-usd "$EVAL_BUDGET" < /dev/null) > "$out/transcript.jsonl" 2> "$out/stderr.txt"
 echo $(( $(date +%s) - start )) > "$out/seconds"
