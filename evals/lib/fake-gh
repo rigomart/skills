@@ -217,10 +217,11 @@ const p = parse(argv.slice(2));
 if (argv.includes("--help") || argv.includes("-h") || group === "help") help(argv.filter((a) => !a.startsWith("-")).join(" "));
 if (group === "--version" || group === "version") finish(0, "gh version 2.83.0 (2026-10-01)");
 
-// Fake CI, for scenarios whose state.json has a "ci" key (babysit-pr):
+// Fake CI, for scenarios whose state.json has a "ci" key (babysit-pr, recall):
 //   "ci": { "checks": { "<name>": "<shell command>" }, "flaky": { "<name>": <failures> },
 //           "delay": <seconds a run stays pending unless someone watches it>,
-//           "head_lag": <seconds a PR keeps showing its old head after its branch moves>, "remote": "<bare repo>" }
+//           "head_lag": <seconds a PR keeps showing its old head after its branch moves>, "remote": "<bare repo>",
+//           "step_names": { "<name>": "<label the log shows instead of the command>" }, "list_rollup": <true for checks in pr list> }
 // Each commit gets one workflow run, created when first asked about. Its jobs run their command
 // on that commit's tree, so a fix that works turns the check green. A flaky check fails its first
 // <failures> runs with a network error. Runs are kept in state.ci_runs.
@@ -260,8 +261,9 @@ if (state.ci) {
       catch { return { conclusion: "failure", log: [["Run actions/checkout@v4", `##[error]fatal: reference is not a tree: ${sha}`]] }; }
       const cmd = ci.checks[job.name];
       const r = spawnSync("sh", ["-c", `${cmd} 2>&1`], { cwd: dir, encoding: "utf8", timeout: 60000 });
-      const lines = (r.stdout || "").split("\n").filter(Boolean).map((l) => [`Run ${cmd}`, l]);
-      if (r.status !== 0) lines.push([`Run ${cmd}`, `##[error]Process completed with exit code ${r.status === null ? 124 : r.status}.`]);
+      const step = `Run ${(ci.step_names || {})[job.name] || cmd}`;
+      const lines = (r.stdout || "").split("\n").filter(Boolean).map((l) => [step, l]);
+      if (r.status !== 0) lines.push([step, `##[error]Process completed with exit code ${r.status === null ? 124 : r.status}.`]);
       return { conclusion: r.status === 0 ? "success" : "failure", log: lines };
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   };
@@ -339,6 +341,26 @@ if (state.ci) {
     v.mergeStateStatus = pr.state !== "OPEN" ? "UNKNOWN" : v.mergeable === "CONFLICTING" ? "DIRTY"
       : runConclusion(run) !== "success" ? "BLOCKED" : behind ? "BEHIND" : "CLEAN";
     emit(p, v, `${v.title} ${repo.nameWithOwner}#${v.number}\n${v.state} • eval-bot wants to merge into ${v.baseRefName} from ${v.headRefName}\n\n${v.body}\n\nView this pull request on GitHub: ${v.url}`);
+  }
+  // With ci.list_rollup set (recall), `pr list` reports each open PR's CI like `pr view` does.
+  if (group === "pr" && sub === "list" && ci.list_rollup) {
+    const st = (p.get("-s", "--state") || "open").toUpperCase();
+    let list = state.prs.filter((x) => st === "ALL" || x.state === st);
+    if (p.get("-H", "--head")) list = list.filter((x) => x.head === p.get("-H", "--head"));
+    if (p.get("-B", "--base")) list = list.filter((x) => x.base === p.get("-B", "--base"));
+    const s = p.get("-S", "--search");
+    if (s) list = list.filter((x) => (x.title + " " + x.body).toLowerCase().includes(String(s).toLowerCase()));
+    const v = list.map((pr) => {
+      const x = prJson(pr);
+      if (pr.state !== "OPEN") return { ...x, statusCheckRollup: [] };
+      const run = prRun(pr, false);
+      x.headRefOid = prHead(pr);
+      x.statusCheckRollup = run.jobs.map((j) => ({ __typename: "CheckRun", name: j.name, workflowName: "CI",
+        status: j.status === "completed" ? "COMPLETED" : "IN_PROGRESS", conclusion: (j.conclusion || "").toUpperCase(), detailsUrl: jobUrl(run, j) }));
+      x.mergeStateStatus = runConclusion(run) === "success" ? "CLEAN" : "BLOCKED";
+      return x;
+    });
+    emit(p, v, v.map((x) => `${x.number}\t${x.title}\t${x.headRefName}\t${x.isDraft ? "DRAFT" : x.state}`).join("\n") || "no pull requests match your search");
   }
   if (group === "pr" && sub === "update-branch") {
     const pr = prOrFail();
@@ -659,6 +681,18 @@ switch (group) {
         finish(0, `${prUrl((findPr(p.pos[0]) || {}).number)}#issuecomment-1`);
       case "status":
         finish(0, `Current branch\n  ${(findPr() && "#" + findPr().number) || "There is no pull request associated with [" + currentBranch() + "]"}`);
+    }
+    break;
+  }
+  case "release": {
+    // Only for scenarios that seed state.releases: [{tagName, name, publishedAt, isLatest, body}].
+    if (!state.releases) break;
+    const rels = state.releases;
+    if (sub === "list") emit(p, rels, rels.map((r) => `${r.name || r.tagName}\t${r.isLatest ? "Latest" : ""}\t${r.tagName}\t${r.publishedAt}`).join("\n") || "no releases found");
+    if (sub === "view") {
+      const r = p.pos[0] ? rels.find((x) => x.tagName === p.pos[0]) : rels.find((x) => x.isLatest) || rels[0];
+      if (!r) finish(1, "", "release not found");
+      emit(p, { ...r, url: `${repoUrl}/releases/tag/${r.tagName}` }, `${r.name || r.tagName}\n${r.tagName}\npublished ${r.publishedAt}\n\n${r.body || ""}`);
     }
     break;
   }

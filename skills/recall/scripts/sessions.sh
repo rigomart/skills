@@ -9,6 +9,9 @@
 # term (case-insensitive extended regexes); with terms, sessions with no hit are left
 # out. --days sets the window by last modification (default 7). Prompts are cut to
 # 160 characters; read a whole session with jq or by grepping its path.
+#
+# RECALL_CLAUDE_PROJECTS and RECALL_CODEX_SESSIONS replace ~/.claude/projects and
+# ~/.codex/sessions, so evals can point it at fixture sessions.
 
 set -u
 
@@ -21,6 +24,8 @@ if [ "${1:-}" = "--days" ]; then
   shift 2
 fi
 terms=$(IFS='|'; echo "$*")
+claude_projects=${RECALL_CLAUDE_PROJECTS:-$HOME/.claude/projects}
+codex_sessions=${RECALL_CODEX_SESSIONS:-$HOME/.codex/sessions}
 
 worktrees=$(git worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p')
 [ -n "$worktrees" ] || { echo "sessions.sh: run it inside a git repo" >&2; exit 2; }
@@ -50,15 +55,15 @@ mtime() { stat -f '%Sm' -t '%Y-%m-%dT%H:%M' "$1" 2>/dev/null || date -r "$1" '+%
 {
   while IFS= read -r wt; do
     slug=$(printf '%s' "$wt" | tr '/.' '--')
-    dir="$HOME/.claude/projects/$slug"
+    dir="$claude_projects/$slug"
     [ -d "$dir" ] || continue
     find "$dir" -maxdepth 1 -name '*.jsonl' -mtime "-$days" | while IFS= read -r f; do
       r=$(row claude "$f") && [ -n "$r" ] && printf '%s\t%s\n' "$(mtime "$f")" "$r"
     done
   done <<<"$worktrees"
 
-  if [ -d "$HOME/.codex/sessions" ]; then
-    find "$HOME/.codex/sessions" -name '*.jsonl' -mtime "-$days" | while IFS= read -r f; do
+  if [ -d "$codex_sessions" ]; then
+    find "$codex_sessions" -name '*.jsonl' -mtime "-$days" | while IFS= read -r f; do
       cwd=$(head -n 1 "$f" | jq -r 'select(.type == "session_meta") | .payload.cwd // empty' 2>/dev/null)
       [ -n "$cwd" ] && grep -Fxq -- "$cwd" <<<"$worktrees" || continue
       r=$(row codex "$f") && [ -n "$r" ] && printf '%s\t%s\n' "$(mtime "$f")" "$r"
