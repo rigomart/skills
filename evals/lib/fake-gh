@@ -33,6 +33,8 @@ const VALUE_FLAGS = new Set(["--json", "--jq", "-q", "--template", "-t", "--titl
   "-a", "--assignee", "-r", "--reviewer", "-s", "--state", "-S", "--search", "-L", "--limit",
   "-R", "--repo", "-X", "--method", "-f", "--raw-field", "--field", "-m", "--milestone",
   "--remove-label", "--interval", "-i", "--author", "-A"]);
+for (const f of ["--parent", "--blocked-by", "--blocking", "--add-blocked-by", "--add-blocking", "--type", "--project", "--add-project",
+  "--remove-project", "--sort", "--order", "--match", "--owner"]) VALUE_FLAGS.add(f);
 
 function parse(args) {
   const flags = {}; const pos = [];
@@ -137,8 +139,77 @@ function readBody(p) {
 
 function help(cmd) {
   const extra = cmd.startsWith("pr create") || cmd.startsWith("pr edit") || cmd.startsWith("pr comment")
-    ? "\n  -a, --attach file        Attach a file and reference it in the body" : "";
+    ? "\n  -a, --attach file        Attach a file and reference it in the body"
+    : cmd.startsWith("issue create") ? "\n  -l, --label name         Add labels by name\n      --parent number      Add the new issue as a sub-issue of the specified parent number or URL\n      --blocked-by numbers Mark the new issue as blocked by these issue numbers or URLs\n      --blocking numbers   Mark the new issue as blocking these issue numbers or URLs\n      --type name          Set the issue type by name"
+    : cmd.startsWith("issue edit") ? "\n      --add-label name     Add labels by name\n      --parent number      Set the parent issue by number or URL\n      --add-blocked-by number  Add 'blocked by' relationships by issue number or URL\n      --add-blocking number    Add 'blocking' relationships by issue number or URL" : "";
   return finish(0, `Usage: gh ${cmd} [flags]\n\nFLAGS${extra}\n  (fake gh for evals: common flags accepted)`);
+}
+
+// Issues live in state.issues, keyed by number: {title, body, state, labels, comments,
+// parent, blockedBy}. Issues filed during the run also get `filed`, their order.
+state.issues = state.issues || {};
+const issueUrl = (n) => `${repoUrl}/issues/${n}`;
+const issueNum = (sel) => String(sel || "").replace(/^#/, "").replace(/.*\/issues\//, "");
+const splitList = (vals) => vals.flatMap((v) => String(v).split(",")).map((s) => s.trim()).filter(Boolean);
+const labelJson = (name) => {
+  const l = (state.labels || []).find((x) => x.name === name) || {};
+  return { name, description: l.description || "", color: l.color || "ededed" };
+};
+const nodes = (ns) => ({ nodes: ns.map(issueRef), totalCount: ns.length });
+const issueRef = (n) => { const is = state.issues[n]; return { number: Number(n), title: is.title, url: issueUrl(n), state: is.state || "OPEN" }; };
+function issueJson(n) {
+  const is = state.issues[n];
+  const others = Object.keys(state.issues);
+  return {
+    number: Number(n), title: is.title, body: is.body, state: is.state || "OPEN", url: issueUrl(n),
+    labels: (is.labels || []).map(labelJson), author: { login: is.author || "eval-bot" },
+    comments: (is.comments || []).map((c) => ({ author: { login: "eval-bot" }, body: c.body })),
+    createdAt: is.createdAt || "2026-11-01T12:00:00Z", closedAt: is.state === "CLOSED" ? "2026-11-02T12:00:00Z" : null,
+    parent: is.parent ? issueRef(is.parent) : null,
+    subIssues: nodes(others.filter((k) => String(state.issues[k].parent) === String(n))),
+    blockedBy: nodes((is.blockedBy || []).filter((k) => state.issues[k])),
+    blocking: nodes(others.filter((k) => (state.issues[k].blockedBy || []).map(String).includes(String(n)))),
+  };
+}
+function requireIssue(sel) {
+  const n = issueNum(sel);
+  if (!state.issues[n]) finish(1, "", `GraphQL: Could not resolve to an issue or pull request with the number of ${n}. (repository.issue)`);
+  return n;
+}
+function requireLabels(labels) {
+  const known = new Set((state.labels || []).map((l) => l.name));
+  for (const l of labels) if (!known.has(l)) finish(1, "", `could not add label: '${l}' not found`);
+}
+// Like GitHub search: every term must match (crudely stemmed); is:, state: and label: filter.
+const STOP = new Set(["a", "an", "the", "of", "to", "in", "on", "for", "and", "or", "is", "it", "with", "when", "be"]);
+const stem = (w) => w.replace(/(ing|ed|es|s|e)$/, "");
+const words = (s) => String(s).toLowerCase().split(/[^a-z0-9]+/).filter((w) => w && !STOP.has(w)).map(stem);
+function searchIssues(query, st) {
+  let wantState = st, labels = [];
+  const phrases = [], terms = [];
+  for (const t of String(query || "").match(/"[^"]*"|\S+/g) || []) {
+    const q = t.match(/^(is|state|label|in|sort|type|repo|no|author):(.*)$/i);
+    if (q) {
+      const v = q[2].replace(/"/g, "").toLowerCase();
+      if (/^(is|state)$/i.test(q[1]) && /^(open|closed)$/.test(v)) wantState = v.toUpperCase();
+      if (/^label$/i.test(q[1])) labels.push(v);
+    } else if (t.startsWith('"')) phrases.push(t.slice(1, -1).toLowerCase());
+    else if (!/^(AND|OR|NOT)$/.test(t)) terms.push(...words(t));
+  }
+  return Object.keys(state.issues).sort((a, b) => b - a).filter((n) => {
+    const is = state.issues[n];
+    const text = `${is.title}\n${is.body}\n${(is.comments || []).map((c) => c.body).join("\n")}`;
+    const have = new Set(words(text));
+    return (wantState === "ALL" || (is.state || "OPEN") === wantState)
+      && labels.every((l) => (is.labels || []).some((x) => x.toLowerCase() === l))
+      && terms.every((w) => have.has(w)) && phrases.every((ph) => text.toLowerCase().includes(ph));
+  });
+}
+function nextIssueNumber() {
+  const used = Object.keys(state.issues).map(Number).concat(state.prs.map((x) => x.number), [state.next_pr - 1]);
+  const n = Math.max(0, ...used) + 1;
+  if (state.next_pr <= n) state.next_pr = n + 1;
+  return n;
 }
 
 const [group, sub, ...rest] = argv;
@@ -189,19 +260,93 @@ switch (group) {
     finish(r.status === 0 ? 0 : 1, r.stdout.replace(/\n$/, ""), r.status === 0 ? "" : r.stderr);
   }
   case "issue": {
-    const issues = state.issues || {};
+    const issues = state.issues;
     if (sub === "view") {
-      const n = String(p.pos[0] || "").replace(/^#/, "").replace(/.*\/issues\//, "");
-      const is = issues[n];
-      if (!is) finish(1, "", `GraphQL: Could not resolve to an issue or pull request with the number of ${n}. (repository.issue)`);
-      const v = { number: Number(n), title: is.title, body: is.body, state: "OPEN", url: `${repoUrl}/issues/${n}`, labels: [], comments: [] };
-      emit(p, v, `${is.title} ${repo.nameWithOwner}#${n}\nOpen\n\n${is.body}`);
+      const n = requireIssue(p.pos[0]);
+      const is = issues[n], v = issueJson(n);
+      const extra = (v.labels.length ? `\nlabels: ${v.labels.map((l) => l.name).join(", ")}` : "")
+        + (v.comments.length ? "\n\n" + v.comments.map((c) => `eval-bot commented\n${c.body}`).join("\n\n") : "");
+      emit(p, v, `${is.title} ${repo.nameWithOwner}#${n}\n${v.state === "OPEN" ? "Open" : "Closed"}${extra}\n\n${is.body}`);
     }
     if (sub === "list") {
-      const list = Object.entries(issues).map(([n, is]) => ({ number: Number(n), title: is.title, state: "OPEN", url: `${repoUrl}/issues/${n}`, labels: [] }));
-      emit(p, list, list.map((i) => `${i.number}\tOPEN\t${i.title}`).join("\n"));
+      const st = (p.get("-s", "--state") || "open").toUpperCase();
+      const want = p.all("-l", "--label").flatMap((l) => splitList([l]));
+      let nums = searchIssues(p.get("-S", "--search"), st)
+        .filter((n) => want.every((l) => (issues[n].labels || []).includes(l)));
+      if (p.get("-L", "--limit")) nums = nums.slice(0, Number(p.get("-L", "--limit")));
+      const list = nums.map(issueJson);
+      emit(p, list, list.map((i) => `${i.number}\t${i.state}\t${i.title}${i.labels.length ? "\t" + i.labels.map((l) => l.name).join(", ") : ""}`).join("\n"));
+    }
+    if (sub === "create") {
+      if (p.has("--web", "-w")) finish(1, "", "fake-gh: --web is not available in this environment");
+      const title = p.get("-t", "--title"), body = readBody(p);
+      if (title === undefined || body === undefined) finish(1, "", "must provide `--title` and `--body` (or `--body-file`) when not running interactively");
+      const labels = splitList(p.all("-l", "--label"));
+      requireLabels(labels);
+      const parent = p.get("--parent") !== undefined ? requireIssue(p.get("--parent")) : undefined;
+      const blockedBy = splitList(p.all("--blocked-by")).map(requireIssue);
+      const blocking = splitList(p.all("--blocking")).map(requireIssue);
+      const n = nextIssueNumber();
+      state.issues_filed = (state.issues_filed || 0) + 1;
+      issues[n] = { title, body, state: "OPEN", labels, comments: [], filed: state.issues_filed };
+      if (parent) issues[n].parent = Number(parent);
+      if (blockedBy.length) issues[n].blockedBy = blockedBy.map(Number);
+      for (const b of blocking) issues[b].blockedBy = [...new Set((issues[b].blockedBy || []).concat(n))];
+      finish(0, issueUrl(n));
+    }
+    if (sub === "comment") {
+      const n = requireIssue(p.pos[0]);
+      const body = readBody(p);
+      if (body === undefined) finish(1, "", "must provide `--body` or `--body-file` when not running interactively");
+      (issues[n].comments = issues[n].comments || []).push({ body });
+      state.comments_made = (state.comments_made || 0) + 1;
+      finish(0, `${issueUrl(n)}#issuecomment-${state.comments_made}`);
+    }
+    if (sub === "edit") {
+      const nums = (p.pos.length ? p.pos : [undefined]).map(requireIssue);
+      const add = splitList(p.all("--add-label"));
+      requireLabels(add);
+      const body = readBody(p);
+      const drop = splitList(p.all("--remove-label"));
+      const parent = p.get("--parent") !== undefined ? Number(requireIssue(p.get("--parent"))) : undefined;
+      const blockedBy = splitList(p.all("--add-blocked-by")).map(requireIssue).map(Number);
+      const blocking = splitList(p.all("--add-blocking")).map(requireIssue);
+      for (const n of nums) {
+        const is = issues[n];
+        if (body !== undefined) is.body = body;
+        if (p.get("-t", "--title")) is.title = p.get("-t", "--title");
+        is.labels = [...new Set((is.labels || []).concat(add))].filter((l) => !drop.includes(l));
+        if (parent !== undefined) is.parent = parent;
+        if (p.has("--remove-parent")) delete is.parent;
+        if (blockedBy.length) is.blockedBy = [...new Set((is.blockedBy || []).concat(blockedBy))];
+        for (const b of blocking) issues[b].blockedBy = [...new Set((issues[b].blockedBy || []).concat(Number(n)))];
+      }
+      finish(0, nums.map(issueUrl).join("\n"));
     }
     break;
+  }
+  case "label": {
+    if (sub === "list") {
+      const list = (state.labels || []).map((l) => ({ ...labelJson(l.name), isDefault: false }));
+      emit(p, list, list.map((l) => `${l.name}\t${l.description}\t#${l.color}`).join("\n"));
+    }
+    if (sub === "create") {
+      const name = p.pos[0];
+      if (!name) finish(1, "", "cannot create label: name argument required");
+      if ((state.labels || []).some((l) => l.name === name)) finish(1, "", `label with name "${name}" already exists; use \`--force\` to update its color and description`);
+      (state.labels = state.labels || []).push({ name, description: typeof p.get("--description") === "string" ? p.get("--description") : "", color: "ededed" });
+      finish(0, `✓ Label "${name}" created in ${repo.nameWithOwner}`);
+    }
+    break;
+  }
+  case "search": {
+    if (sub !== "issues") break;
+    const st = (p.get("--state") || "all").toUpperCase();
+    const want = p.all("--label").flatMap((l) => splitList([l]));
+    const nums = searchIssues(p.pos.join(" "), st).filter((n) => want.every((l) => (state.issues[n].labels || []).includes(l)));
+    const list = nums.map((n) => ({ ...issueJson(n), state: (state.issues[n].state || "OPEN").toLowerCase(),
+      repository: { name: repo.name, nameWithOwner: repo.nameWithOwner }, isPullRequest: false }));
+    emit(p, list, list.map((i) => `${repo.nameWithOwner}\t${i.number}\t${i.state}\t${i.title}\t${i.labels.map((l) => l.name).join(", ")}`).join("\n") || "No issues matched your search");
   }
   case "pr": {
     switch (sub) {

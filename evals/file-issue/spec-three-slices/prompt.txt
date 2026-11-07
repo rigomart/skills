@@ -1,0 +1,5 @@
+File this plan as issues. We're adding due dates to tasks, and it's too big for one PR. Split it into three slices, in this order, each one needing the one before:
+
+1. `tasks add --due 2026-12-01 <title>` stores a due date on the task.
+2. `tasks list` shows each task's due date and lists overdue tasks first.
+3. A new `tasks week` command lists the tasks due in the next seven days.

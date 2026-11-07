@@ -1,0 +1,1 @@
+Open an issue: `tasks list` should be able to show done tasks too, with an `--all` flag that marks the finished ones with ✓.
