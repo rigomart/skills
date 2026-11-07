@@ -2,7 +2,8 @@
 # Flag the mechanical tells of AI writing in prose: em dashes, curly quotes, AI vocabulary,
 # filler, chat phrases, title-case headings, inline-header bullets, decorative emoji.
 # Usage: scan.sh <file>... (or - for stdin)
-# Skips fenced code blocks and inline code spans. Prints one line per hit:
+# Skips fenced code blocks and inline code spans, and reads quoted lines without their ">" markers.
+# Prints one line per hit:
 #   <file>:<line>: <rule>: <matched text>
 # Exits 1 if anything was flagged, 0 if clean, 2 on bad input.
 
@@ -49,6 +50,7 @@ for my $file (@ARGV) {
     chomp $line;
     if ($line =~ /^\s*(?:```|~~~)/) { $fenced = !$fenced; next }
     next if $fenced;
+    $line =~ s/^\s*(?:>\s?)+//;
     $line =~ s/`[^`]*`//g;
     $line =~ s/\]\([^)]*\)/]/g;
     my $name = $file eq "-" ? "stdin" : $file;

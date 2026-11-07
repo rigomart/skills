@@ -1,0 +1,7 @@
+tuesday
+overdue
+next week
+(more than|over|longer than|past) (2|two) days
+\b(could|may|might)\b
+(blocked|waits?|waiting|can't start|cannot start|starts? (only )?(after|once|when)).{0,40}44|44.{0,40}(unblock|first)
+about 60|~ ?60|roughly 60|around 60

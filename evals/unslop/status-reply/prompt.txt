@@ -1,0 +1,3 @@
+Unslop this reply to my lead before I paste it into Slack. They asked where the due-dates work stands.
+
+Great question! Here's the thing: the due-dates work is progressing well — slice 1 (`tasks add --due 2026-12-01`) merged in #41 on Tuesday, and slice 2 is in review at https://github.com/acme/tasks/pull/44. It's not just about showing dates; it's about surfacing overdue tasks first, which is pivotal for our users. Slice 3 (`tasks week`) is blocked until #44 merges, and it could potentially slip to next week if review takes more than 2 days. Overall, I'd say we're about 60% done. Let me know if you have any questions!

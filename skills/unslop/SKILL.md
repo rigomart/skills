@@ -64,13 +64,13 @@ bash scripts/scan.sh <file>...
 pbpaste | bash scripts/scan.sh -
 ```
 
-It skips fenced code and inline code, prints `<file>:<line>: <rule>: <match>` per hit, and exits 1 if anything was flagged. Each word hit is a candidate: keep it when it is the plain word for the thing (a "robust" estimator in statistics, a "landscape" photo). Em dashes, curly quotes and chat phrases have no such exception. Text you're working on in the reply itself goes through the scan via a temp file or stdin.
+It skips fenced code and inline code, prints `<file>:<line>: <rule>: <match>` per hit, and exits 1 if anything was flagged. Each word hit is a candidate: keep it when it is the plain word for the thing (a "robust" estimator in statistics, a "landscape" photo). Em dashes, curly quotes, bold-label bullets and chat phrases have no such exception. Text you're working on in the reply itself goes through the scan via a temp file or stdin.
 
 The scan sees words, not shapes or rhythm. After it passes, reread the text once from the top as its reader would. For long text that goes out (docs, a README, a post), also give a fresh subagent only the rewritten text, and ask it to quote each sentence it had to read twice or that reads machine-written. Pick its model with the `subagents` skill if it is installed. Fix what it quotes.
 
 ## Report
 
-The report is prose too, held to this skill: plain bullets, no bold labels.
+The report comes after the result, also when the rewritten text is itself the reply. It is prose too, held to this skill: plain bullets, no bold labels. Write "- Cut 9 filler phrases", not "- **Cuts:** 9 filler phrases".
 
 - What changed, as kinds and counts rather than a diff recital: "cut 9 filler phrases, split 4 sentences, replaced 6 em dashes".
 - Each edit that might have shifted meaning, quoted before and after.
