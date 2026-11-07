@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# update-branch: merge a pull request's base into its branch on GitHub without a
+# force-push, wait for the branch to move, and pull the merge into the current
+# checkout when it is on that branch. GitHub runs the merge after it answers, so
+# the branch moves a few seconds later.
+#
+#   update-branch <pr> [--repo owner/name]
+#
+# Exit codes
+#   0  the branch now contains its base, or already did
+#   1  GitHub refused the update, such as for a conflict: its message is printed
+#   2  bad input, or the branch did not move within 2 minutes
+set -uo pipefail
+
+usage="usage: update-branch <pr> [--repo owner/name]"
+pr="${1:-}"
+[ -n "$pr" ] && [ "${pr#-}" = "$pr" ] || { echo "update-branch: $usage"; exit 2; }
+shift
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --repo) [ -n "${2:-}" ] || { echo "update-branch: $usage"; exit 2; }; export GH_REPO="$2"; shift 2 ;;
+    *) echo "update-branch: unknown argument '$1'. $usage"; exit 2 ;;
+  esac
+done
+
+# The branch lives in the repo that holds it, a fork's own for a fork's PR.
+read -r ref name < <(gh pr view "$pr" --json headRepositoryOwner,headRepository,headRefName \
+  --jq '"\(.headRepositoryOwner.login)/\(.headRepository.name)/git/ref/heads/\(.headRefName) \(.headRefName)"' 2>/dev/null) \
+  || { echo "update-branch: cannot read PR '$pr'"; exit 2; }
+branch_head() { gh api "repos/$ref" --jq .object.sha 2>/dev/null; }
+
+pull() { # pull the branch into the current checkout when it is on that branch
+  [ "$(git branch --show-current 2>/dev/null)" = "$name" ] || return 0
+  if git pull -q --ff-only 2>/dev/null; then echo "; pulled into your checkout"
+  else echo "; pull it into your checkout with git pull --ff-only"; fi
+}
+
+before=$(branch_head)
+[ -n "$before" ] || { echo "update-branch: cannot read branch $name"; exit 2; }
+out=$(gh pr update-branch "$pr" 2>&1) || { echo "#$pr not updated: $out"; exit 1; }
+case "$out" in *up-to-date*) echo "#$pr already contains its base$(pull)"; exit 0 ;; esac
+
+tries=0
+while after=$(branch_head); [ -z "$after" ] || [ "$after" = "$before" ]; do
+  tries=$((tries + 1))
+  if [ "$tries" -ge 24 ]; then
+    echo "#$pr branch still at ${before:0:7} 2 minutes after the update"
+    exit 2
+  fi
+  sleep 5
+done
+
+echo "#$pr updated from its base: ${before:0:7} -> ${after:0:7}$(pull)"

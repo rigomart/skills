@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # wait-green: wait until a pull request's checks finish on its current head,
-# then print one verdict line.
+# then print one verdict line. Start it right after a push, a rerun or
+# `gh pr update-branch`: it waits for the PR to show the branch's new commit.
 #
 #   wait-green <pr> [--repo owner/name]
 #
@@ -37,6 +38,14 @@ exit_if_failed() {
   fi
 }
 
+# The commit the PR's branch points at, from the repo that holds the branch (a fork's own).
+branch_head() {
+  local repo
+  repo=$(gh pr view "$pr" --json headRepositoryOwner,headRepository,headRefName \
+    --jq '"\(.headRepositoryOwner.login)/\(.headRepository.name)/git/ref/heads/\(.headRefName)"' 2>/dev/null) || return 0
+  gh api "repos/$repo" --jq .object.sha 2>/dev/null || true
+}
+
 count_checks() {
   # gh exits 1 with "no checks reported" while none exist, and 8 while some are pending.
   gh pr checks "$pr" --json bucket --jq "[.[] | select($1)] | length" 2>/dev/null
@@ -50,6 +59,19 @@ while :; do
     CLOSED) echo "#$pr closed without merging"; exit 1 ;;
   esac
   head=$(field headRefOid)
+
+  # The PR shows a pushed commit seconds after its branch moves. Until then it reports the
+  # old head and that head's checks.
+  tries=0
+  while branch=$(branch_head) && [ -n "$branch" ] && [ "$branch" != "$head" ]; do
+    tries=$((tries + 1))
+    if [ "$tries" -ge 60 ]; then
+      echo "#$pr still shows ${head:0:7} 5 minutes after its branch moved to ${branch:0:7}"
+      exit 2
+    fi
+    sleep 5
+    head=$(field headRefOid)
+  done
 
   # Checks appear seconds to minutes after a push. Until then the head reports none.
   tries=0

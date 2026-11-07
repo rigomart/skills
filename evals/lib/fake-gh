@@ -217,6 +217,224 @@ const p = parse(argv.slice(2));
 if (argv.includes("--help") || argv.includes("-h") || group === "help") help(argv.filter((a) => !a.startsWith("-")).join(" "));
 if (group === "--version" || group === "version") finish(0, "gh version 2.83.0 (2026-10-01)");
 
+// Fake CI, for scenarios whose state.json has a "ci" key (babysit-pr):
+//   "ci": { "checks": { "<name>": "<shell command>" }, "flaky": { "<name>": <failures> },
+//           "delay": <seconds a run stays pending unless someone watches it>,
+//           "head_lag": <seconds a PR keeps showing its old head after its branch moves>, "remote": "<bare repo>" }
+// Each commit gets one workflow run, created when first asked about. Its jobs run their command
+// on that commit's tree, so a fix that works turns the check green. A flaky check fails its first
+// <failures> runs with a network error. Runs are kept in state.ci_runs.
+if (group === "pr" && sub === "checkout") {
+  const pr = findPr(p.pos[0]);
+  if (!pr) finish(1, "", `no pull requests found for branch "${p.pos[0] || currentBranch()}"`);
+  const run = (...a) => spawnSync("git", a, { encoding: "utf8" });
+  run("fetch", "-q", "origin");
+  const local = run("rev-parse", "--verify", "-q", `refs/heads/${pr.head}`).status === 0;
+  const r = local ? run("checkout", pr.head) : run("checkout", "-b", pr.head, "--track", `origin/${pr.head}`);
+  if (r.status !== 0) finish(1, "", r.stderr);
+  if (local) { const m = run("merge", "--ff-only", `origin/${pr.head}`); if (m.status !== 0) finish(1, "", m.stderr); }
+  finish(0, "", `Switched to branch '${pr.head}'`);
+}
+if (state.ci) {
+  const ci = state.ci;
+  state.ci_runs = state.ci_runs || [];
+  const now = () => Math.floor(Date.now() / 1000);
+  const remotePath = ci.remote || git("remote", "get-url", "origin");
+  const rg = (...a) => spawnSync("git", ["-C", remotePath, ...a], { encoding: "utf8" });
+  const resolve = (ref) => { const r = rg("rev-parse", "--verify", "-q", `${ref}^{commit}`); return r.status === 0 ? r.stdout.trim() : ""; };
+  const iso = (t) => new Date(t * 1000).toISOString().replace(/\.\d+Z$/, "Z");
+  for (const f of ["--branch", "--commit", "--job", "-j", "--workflow", "-w", "--event", "-e", "--status", "--user", "-u"]) VALUE_FLAGS.add(f);
+  const q = parse(argv.slice(2));
+
+  const runJob = (job, sha) => {
+    if ((ci.flaky || {})[job.name] > 0) {
+      ci.flaky[job.name]--;
+      return { conclusion: "failure", log: [["Set up job", "Requested labels: ubuntu-latest"],
+        ["Run actions/setup-node@v4", "Attempting to download 24.x..."],
+        ["Run actions/setup-node@v4", "##[error]read ECONNRESET"],
+        ["Run actions/setup-node@v4", "##[error]Process completed with exit code 1."]] };
+    }
+    const dir = fs.mkdtempSync(path.join(require("os").tmpdir(), "fake-ci-"));
+    try {
+      try { execFileSync("sh", ["-c", `git -C "$0" archive "$1" | tar -x -C "$2"`, remotePath, sha, dir], { stdio: "ignore" }); }
+      catch { return { conclusion: "failure", log: [["Run actions/checkout@v4", `##[error]fatal: reference is not a tree: ${sha}`]] }; }
+      const cmd = ci.checks[job.name];
+      const r = spawnSync("sh", ["-c", `${cmd} 2>&1`], { cwd: dir, encoding: "utf8", timeout: 60000 });
+      const lines = (r.stdout || "").split("\n").filter(Boolean).map((l) => [`Run ${cmd}`, l]);
+      if (r.status !== 0) lines.push([`Run ${cmd}`, `##[error]Process completed with exit code ${r.status === null ? 124 : r.status}.`]);
+      return { conclusion: r.status === 0 ? "success" : "failure", log: lines };
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  };
+  const settle = (run, force) => {
+    if (!force && now() - run.started < (ci.delay === undefined ? 30 : ci.delay)) return run;
+    for (const job of run.jobs) if (job.status !== "completed") Object.assign(job, { status: "completed", completed: now() }, runJob(job, run.sha));
+    return run;
+  };
+  const runFor = (sha, branch, event, done) => {
+    let run = state.ci_runs.filter((r) => r.sha === sha).pop();
+    if (!run) {
+      const id = 100 + state.ci_runs.length;
+      run = { id, sha, branch, event, attempt: 1, started: done ? now() - 600 : now(),
+        jobs: Object.keys(ci.checks).map((name, i) => ({ id: id * 10 + i + 1, name, status: "queued", attempts: 1 })) };
+      state.ci_runs.push(run);
+    }
+    return run;
+  };
+  // GitHub shows a pushed commit a few seconds late; head_lag emulates that, timed from the remote's reflog.
+  const prHead = (pr) => {
+    const entries = rg("reflog", "show", "--date=unix", "--format=%H %gd", `refs/heads/${pr.head}`).stdout.trim().split("\n")
+      .map((l) => l.match(/^(\w+) .*@\{(\d+)\}$/)).filter(Boolean).map((m) => ({ sha: m[1], t: Number(m[2]) }));
+    const settled = entries.find((e) => now() - e.t >= (ci.head_lag || 0));
+    return (settled || entries[entries.length - 1] || {}).sha || resolve(pr.head);
+  };
+  const prRun = (pr, force) => {
+    const sha = prHead(pr);
+    return sha ? settle(runFor(sha, pr.head, "pull_request"), force) : { id: 0, sha: "", started: 0, jobs: [] };
+  };
+  const jobUrl = (run, job) => `${repoUrl}/actions/runs/${run.id}/job/${job.id}`;
+  const bucket = (job) => job.status !== "completed" ? "pending" : job.conclusion === "success" ? "pass" : "fail";
+  const runStatus = (run) => run.jobs.every((j) => j.status === "completed") ? "completed" : "in_progress";
+  const runConclusion = (run) => runStatus(run) !== "completed" ? "" : run.jobs.some((j) => j.conclusion !== "success") ? "failure" : "success";
+  const runJson = (run) => ({ databaseId: run.id, number: run.id, attempt: run.attempt, name: "CI", workflowName: "CI",
+    displayTitle: "CI", headBranch: run.branch, headSha: run.sha, event: run.event, status: runStatus(run),
+    conclusion: runConclusion(run), url: `${repoUrl}/actions/runs/${run.id}`, createdAt: iso(run.started), updatedAt: iso(run.started),
+    jobs: run.jobs.map((j) => ({ databaseId: j.id, name: j.name, status: j.status, conclusion: j.conclusion || "", url: jobUrl(run, j) })) });
+  const compare = (base, head) => {
+    const b = resolve(base), h = resolve(head);
+    if (!b || !h) return null;
+    const [behind, ahead] = rg("rev-list", "--left-right", "--count", `${b}...${h}`).stdout.trim().split(/\s+/).map(Number);
+    const status = !ahead && !behind ? "identical" : !behind ? "ahead" : !ahead ? "behind" : "diverged";
+    return { status, ahead_by: ahead, behind_by: behind, total_commits: ahead,
+      base_commit: { sha: b }, merge_base_commit: { sha: rg("merge-base", b, h).stdout.trim() } };
+  };
+  const conflicts = (pr) => rg("merge-tree", "--write-tree", pr.base, pr.head).status === 1;
+  const prOrFail = () => { const pr = findPr(p.pos[0]); if (!pr) finish(1, "", `no pull requests found for branch "${p.pos[0] || currentBranch()}"`); return pr; };
+
+  if (group === "pr" && sub === "checks") {
+    const pr = prOrFail();
+    const run = prRun(pr, p.has("--watch"));
+    const checks = run.jobs.map((j) => ({ name: j.name, state: j.status !== "completed" ? "IN_PROGRESS" : j.conclusion.toUpperCase(),
+      bucket: bucket(j), workflow: "CI", event: run.event, link: jobUrl(run, j), description: "",
+      startedAt: iso(run.started), completedAt: j.completed ? iso(j.completed) : "0001-01-01T00:00:00Z" }));
+    if (q.get("--json") !== undefined || q.get("--jq", "-q") !== undefined) emit(p, checks);
+    const n = (b) => checks.filter((c) => c.bucket === b).length;
+    const text = checks.map((c) => `${c.name}\t${c.bucket}\t${c.bucket === "pending" ? "0" : "41s"}\t${c.link}`).join("\n")
+      + (n("fail") ? `\n\nSome checks were not successful\n${n("fail")} failing, ${n("pass")} successful, 0 skipped, and ${n("pending")} pending checks`
+        : n("pending") ? `\n\nSome checks are still pending\n0 failing, ${n("pass")} successful, 0 skipped, and ${n("pending")} pending checks`
+        : "\n\nAll checks were successful");
+    finish(n("fail") ? 1 : n("pending") ? 8 : 0, text);
+  }
+  if (group === "pr" && sub === "view") {
+    const pr = prOrFail();
+    const v = prJson(pr);
+    const run = prRun(pr, false);
+    const behind = (compare(pr.base, pr.head) || {}).behind_by;
+    v.headRefOid = prHead(pr);
+    v.headRepositoryOwner = { login: repo.nameWithOwner.split("/")[0] };
+    v.headRepository = { name: repo.name };
+    Object.assign(v, { reviews: [], latestReviews: [], comments: [], reviewRequests: [] });
+    v.statusCheckRollup = run.jobs.map((j) => ({ __typename: "CheckRun", name: j.name, workflowName: "CI",
+      status: j.status === "completed" ? "COMPLETED" : "IN_PROGRESS", conclusion: (j.conclusion || "").toUpperCase(), detailsUrl: jobUrl(run, j) }));
+    v.mergeable = pr.state !== "OPEN" ? "UNKNOWN" : conflicts(pr) ? "CONFLICTING" : "MERGEABLE";
+    v.mergeStateStatus = pr.state !== "OPEN" ? "UNKNOWN" : v.mergeable === "CONFLICTING" ? "DIRTY"
+      : runConclusion(run) !== "success" ? "BLOCKED" : behind ? "BEHIND" : "CLEAN";
+    emit(p, v, `${v.title} ${repo.nameWithOwner}#${v.number}\n${v.state} • eval-bot wants to merge into ${v.baseRefName} from ${v.headRefName}\n\n${v.body}\n\nView this pull request on GitHub: ${v.url}`);
+  }
+  if (group === "pr" && sub === "update-branch") {
+    const pr = prOrFail();
+    if (p.has("--rebase")) finish(1, "", "fake-gh: --rebase is not available in this environment");
+    const head = resolve(pr.head), base = resolve(pr.base);
+    if (rg("merge-base", "--is-ancestor", base, head).status === 0) finish(0, "✓ PR branch already up-to-date");
+    const tree = rg("merge-tree", "--write-tree", head, base);
+    if (tree.status !== 0) finish(1, "", "X Cannot update PR branch due to conflicts");
+    const commit = rg("commit-tree", tree.stdout.trim().split("\n")[0], "-p", head, "-p", base, "-m", `Merge branch '${pr.base}' into ${pr.head}`).stdout.trim();
+    rg("update-ref", "-m", "update-branch", `refs/heads/${pr.head}`, commit, head);
+    finish(0, "✓ PR branch updated");
+  }
+  if (group === "run") {
+    const byId = (id) => state.ci_runs.find((r) => String(r.id) === String(id));
+    if (sub === "list") {
+      const branch = q.get("-b", "--branch"), commit = q.get("--commit");
+      if (branch && !commit) { const sha = resolve(branch); if (sha) settle(runFor(sha, branch, branch === repo.default_branch ? "push" : "pull_request", true), false); }
+      for (const pr of state.prs.filter((x) => x.state === "OPEN")) settle(runFor(prHead(pr), pr.head, "pull_request"), false);
+      let runs = state.ci_runs.slice().reverse();
+      if (branch) runs = runs.filter((r) => r.branch === branch);
+      if (commit) runs = runs.filter((r) => r.sha.startsWith(commit));
+      const v = runs.slice(0, Number(q.get("-L", "--limit") || 20)).map(runJson);
+      emit(q, v, v.map((r) => `${r.status}\t${r.conclusion}\t${r.displayTitle}\tCI\t${r.headBranch}\t${r.event}\t${r.databaseId}\t41s\t${r.createdAt}`).join("\n") || "no runs found");
+    }
+    const id = q.pos[0] || (q.get("--job", "-j") && (state.ci_runs.find((r) => r.jobs.some((j) => String(j.id) === String(q.get("--job", "-j")))) || {}).id);
+    if (!id && ["view", "rerun", "watch"].includes(sub)) finish(1, "", "run or job ID required when not running interactively");
+    const run = byId(id);
+    if (!run && ["view", "rerun", "watch"].includes(sub)) finish(1, "", `could not find any workflow run with ID ${id}`);
+    if (sub === "view") {
+      settle(run, false);
+      const jobArg = q.get("--job", "-j");
+      const jobs = run.jobs.filter((j) => !jobArg || String(j.id) === String(jobArg));
+      const logOf = (js) => js.flatMap((j) => j.log.map(([step, line]) => `${j.name}\t${step}\t${iso(j.completed)} ${line}`)).join("\n");
+      if (q.has("--log-failed")) finish(0, logOf(jobs.filter((j) => j.status === "completed" && j.conclusion !== "success")));
+      if (q.has("--log")) {
+        if (runStatus(run) !== "completed") finish(1, "", "run is still in progress; logs will be available when it is complete");
+        finish(0, logOf(jobs));
+      }
+      const mark = (j) => j.status !== "completed" ? "*" : j.conclusion === "success" ? "✓" : "X";
+      const failed = run.jobs.filter((j) => bucket(j) === "fail");
+      emit(q, runJson(run), `${runStatus(run) === "completed" ? (runConclusion(run) === "success" ? "✓" : "X") : "*"} ${run.branch} CI · ${run.id}\n`
+        + `Triggered via ${run.event}${run.attempt > 1 ? ` (attempt #${run.attempt})` : ""}\n\nJOBS\n`
+        + run.jobs.map((j) => `${mark(j)} ${j.name}${j.status === "completed" ? " in 41s" : ""} (ID ${j.id})`).join("\n")
+        + (failed.length ? `\n\nANNOTATIONS\n${failed.map((j) => `X Process completed with exit code 1.\n${j.name}: .github#1`).join("\n")}\n\nTo see what failed, try: gh run view ${run.id} --log-failed` : "")
+        + `\nView this run on GitHub: ${repoUrl}/actions/runs/${run.id}`);
+    }
+    if (sub === "rerun") {
+      if (runStatus(run) !== "completed") finish(1, "", `run ${run.id} cannot be rerun; it is still in progress`);
+      const jobArg = q.get("--job", "-j");
+      const again = run.jobs.filter((j) => jobArg ? String(j.id) === String(jobArg) : q.has("--failed") ? j.conclusion !== "success" : true);
+      if (!again.length) finish(1, "", `run ${run.id} has no failed jobs to rerun`);
+      for (const j of again) { j.status = "queued"; j.conclusion = ""; j.completed = 0; j.attempts++; }
+      run.attempt++; run.started = now();
+      finish(0, `✓ Requested rerun${q.has("--failed") ? " (failed jobs)" : ""} of run ${run.id}`);
+    }
+    if (sub === "watch") {
+      settle(run, true);
+      const ok = runConclusion(run) === "success";
+      finish(q.has("--exit-status") && !ok ? 1 : 0, `${ok ? "✓" : "X"} ${run.branch} CI · ${run.id}\nRun CI (${run.id}) completed with '${runConclusion(run)}'`);
+    }
+  }
+  if (group === "api") {
+    const q = parse(argv.slice(1));
+    const ep = (q.pos[0] || "").replace(/^\//, "").replace("{owner}/{repo}", repo.nameWithOwner).split("?")[0];
+    const base = `repos/${repo.nameWithOwner}`;
+    const out = (v) => {
+      const jq = q.get("--jq", "-q");
+      if (!jq) finish(0, JSON.stringify(v, null, 2));
+      const r = spawnSync("jq", ["-r", jq], { input: JSON.stringify(v), encoding: "utf8" });
+      finish(r.status === 0 ? 0 : 1, r.stdout.replace(/\n$/, ""), r.status === 0 ? "" : r.stderr);
+    };
+    let m;
+    if (new RegExp(`^${base}/(pulls/\\d+/(comments|reviews)|issues/\\d+/comments)$`).test(ep)) out([]);
+    if ((m = ep.match(new RegExp(`^${base}/git/ref/heads/(.+)$`)))) {
+      const sha = resolve(decodeURIComponent(m[1]));
+      if (!sha) finish(1, "", "gh: Not Found (HTTP 404)");
+      out({ ref: `refs/heads/${decodeURIComponent(m[1])}`, object: { sha, type: "commit" } });
+    }
+    if ((m = ep.match(new RegExp(`^${base}/compare/(.+?)\\.\\.\\.(.+)$`)))) {
+      const v = compare(decodeURIComponent(m[1]), decodeURIComponent(m[2]));
+      if (!v) finish(1, "", "gh: Not Found (HTTP 404)");
+      out(v);
+    }
+    if ((m = ep.match(new RegExp(`^${base}/commits/(.+)/(check-runs|status)$`)))) {
+      const ref = decodeURIComponent(m[1]); const sha = resolve(ref);
+      if (!sha) finish(1, "", "gh: No commit found for SHA: " + ref + " (HTTP 422)");
+      const pr = state.prs.find((x) => x.state === "OPEN" && prHead(x) === sha);
+      const run = settle(runFor(sha, pr ? pr.head : ref, pr ? "pull_request" : "push", !pr), false);
+      const runs = run.jobs.map((j) => ({ id: j.id, name: j.name, head_sha: sha, status: j.status === "completed" ? "completed" : "in_progress",
+        conclusion: j.conclusion || null, html_url: jobUrl(run, j) }));
+      if (m[2] === "check-runs") out({ total_count: runs.length, check_runs: runs });
+      out({ state: runConclusion(run) || "pending", sha, total_count: 0, statuses: [] });
+    }
+  }
+}
+
 switch (group) {
   case "auth":
     if (sub === "status") finish(0, "github.com\n  ✓ Logged in to github.com account eval-bot (keyring)\n  - Token scopes: 'repo', 'workflow'");
