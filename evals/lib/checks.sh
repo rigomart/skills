@@ -1,6 +1,6 @@
 # checks.sh: helpers for a scenario's check.sh. Each check prints one line,
 # "PASS <name>" or "FAIL <name>: <detail>". Sourced with REPO, REMOTE,
-# EVAL_GH_STATE and TRANSCRIPT set.
+# EVAL_GH_STATE, EVAL_SKILL and TRANSCRIPT set.
 
 pass() { echo "PASS $1"; }
 fail() { echo "FAIL $1: $2"; }
@@ -9,7 +9,46 @@ expect() { # expect <name> <detail-on-fail> <command...>
   if "$@" >/dev/null 2>&1; then pass "$name"; else fail "$name" "$detail"; fi
 }
 
+# tool_uses includes the calls subagents made; main_tool_uses leaves them out.
 tool_uses() { jq -c 'select(.type=="assistant") | .message.content[]? | select(.type=="tool_use")' "$TRANSCRIPT"; }
+main_tool_uses() { jq -c 'select(.type=="assistant" and .parent_tool_use_id == null) | .message.content[]? | select(.type=="tool_use")' "$TRANSCRIPT"; }
+subagent_tool_uses() { # subagent_tool_uses <spawn id>: the calls made by the subagent that spawn started
+  jq -c --arg id "$1" 'select(.type=="assistant" and .parent_tool_use_id == $id) | .message.content[]? | select(.type=="tool_use")' "$TRANSCRIPT"
+}
+
+# One JSON line per subagent spawn, nested ones included:
+# {id, parent, type, model, description, prompt, background}. model is null when the spawn named none.
+subagent_spawns() {
+  jq -c 'select(.type=="assistant") | .parent_tool_use_id as $p | .message.content[]?
+    | select(.type=="tool_use" and (.name=="Agent" or .name=="Task"))
+    | {id, parent: $p, type: .input.subagent_type, model: .input.model, description: .input.description,
+       prompt: .input.prompt, background: (.input.run_in_background // false)}' "$TRANSCRIPT"
+}
+subagent_models() { subagent_spawns | jq -r '.model // "unset"'; }
+
+# One JSON line per task-list call by the main agent: {tool, task, subject, description, status, error}.
+# task is the id the call created or changed; fields the call left out are null; error is true when the call failed.
+task_calls() {
+  jq -c -s '
+    (map(select(.type=="user" and .parent_tool_use_id == null) | .message.content[]? | select(.type=="tool_result")
+      | {key: .tool_use_id, value: {error: (.is_error // false),
+          created: ((.content // "" | if type=="string" then . else (map(.text? // "") | join("")) end)
+            | (capture("Task #(?<id>[0-9]+) created").id // null))}}) | from_entries) as $results
+    | .[] | select(.type=="assistant" and .parent_tool_use_id == null) | .message.content[]?
+    | select(.type=="tool_use" and (.name=="TaskCreate" or .name=="TaskUpdate"))
+    | {tool: .name, task: (if .name=="TaskCreate" then $results[.id].created else .input.taskId end),
+       subject: .input.subject, description: .input.description, status: .input.status,
+       error: ($results[.id].error // false)}' "$TRANSCRIPT"
+}
+# The main agent's task list as it ended, failed calls left out: "<id><TAB><status><TAB><subject>" per task, in creation order.
+task_list() {
+  task_calls | jq -r -s 'map(select(.error | not))
+    | reduce .[] as $c ({order: [], t: {}};
+      ($c.task // "?") as $id
+      | if $c.tool == "TaskCreate" then .order += [$id] | .t[$id] = {status: ($c.status // "pending"), subject: $c.subject}
+        else .t[$id] = ((.t[$id] // {}) + ({status: $c.status, subject: $c.subject} | with_entries(select(.value != null)))) end)
+    | .order[] as $id | "\($id)\t\(.t[$id].status)\t\(.t[$id].subject)"'
+}
 bash_cmds() { tool_uses | jq -r 'select(.name=="Bash") | .input.command'; }
 final_text() { jq -r 'select(.type=="result") | .result // empty' "$TRANSCRIPT"; }
 gh_calls() { jq -r '.argv | join(" ")' "$EVAL_GH_STATE/calls.jsonl"; }
@@ -19,11 +58,15 @@ pr_field() { jq -r --argjson n "$1" ".prs[] | select(.number==\$n) | $2" "$EVAL_
 headings() { printf '%s\n' "$1" | grep -E '^## ' | sed -E 's/^## +//; s/[[:space:]]+$//'; }
 remote_branches() { git -C "$REMOTE" for-each-ref --format='%(refname:short)' refs/heads; }
 
-skill_loaded() {
-  tool_uses | jq -e -s 'any(.[]; (.name=="Skill" and (.input.skill // "" | test("ship-changes"))) or (.name=="Read" and (.input.file_path // "" | test("skills/ship-changes/SKILL.md"))) or (.name=="Bash" and (.input.command // "" | test("skills/ship-changes(/SKILL.md)?"))))' >/dev/null
+skill_loaded() { # skill_loaded [skill]: the skill under test by default
+  tool_uses | jq -e -s --arg s "${1:-$EVAL_SKILL}" 'any(.[]; (.name=="Skill" and (.input.skill // "" | test("(^|:)" + $s + "$"))) or (.name=="Read" and (.input.file_path // "" | test("skills/" + $s + "/SKILL.md"))) or (.name=="Bash" and (.input.command // "" | test("skills/" + $s + "(/SKILL.md)?"))))' >/dev/null
 }
 
-check_skill_loaded() { expect skill_loaded "never invoked or read the ship-changes skill" skill_loaded; }
+check_skill_loaded() { # check_skill_loaded [skill]: checks skill_loaded for the skill under test, <skill>_loaded for another
+  local s=${1:-$EVAL_SKILL} name=skill_loaded
+  [ -z "${1:-}" ] || name="${1}_loaded"
+  expect "$name" "never invoked or read the $s skill" skill_loaded "$s"
+}
 
 check_ran() { # check_ran <name> <regex over Bash commands>
   if bash_cmds | grep -Eq "$2"; then pass "$1"; else fail "$1" "no Bash command matched /$2/"; fi

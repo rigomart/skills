@@ -2,7 +2,14 @@
 # summarize.sh <results dir>: pass rate per scenario and check, then cost and time.
 set -uo pipefail
 dir=$1
-echo "# $(basename "$(dirname "$dir")") on $(basename "$dir")"
+skill=$(basename "$(dirname "$dir")")
+on=$(basename "$dir" | sed -E 's/^[0-9]{8}-[0-9]{6}-//')
+floor=""
+if [ -f "$(dirname "$0")/../$skill/floor" ]; then
+  read -r fm fe _ < <(tr -d '\r' < "$(dirname "$0")/../$skill/floor") || true
+  if [ "$on" = "$fm-$fe" ]; then floor=" (floor)"; else floor=" (floor is $fm-$fe)"; fi
+fi
+echo "# $skill on $on$floor"
 echo
 echo "| Scenario | Check | Passed |"
 echo "| --- | --- | --- |"
