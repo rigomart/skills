@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# steps <playbook>: print the playbook's numbered steps, one per line, as they
+# go in the task list.
+set -euo pipefail
+dir=$(cd "$(dirname "$0")/../playbooks" && pwd)
+pb=${1:-}
+if [ -z "$pb" ] || [ ! -f "$dir/$pb.md" ]; then
+  echo "usage: steps <playbook>; playbooks: $(ls "$dir" | sed 's/\.md$//' | paste -sd' ' -)" >&2
+  exit 2
+fi
+grep -E '^[0-9]+\. ' "$dir/$pb.md"
