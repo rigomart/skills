@@ -1,0 +1,1 @@
+Run the test suites in `packages/core` and `packages/sync` and tell me which tests fail. Their output is long, so keep it out of this conversation: use subagents.

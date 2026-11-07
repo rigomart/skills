@@ -1,6 +1,6 @@
 ---
 name: subagents
-description: Decide what goes to a subagent, set its role and model, brief it, and check what it returns. Use when spawning or delegating to a subagent, when asked for parallel agents or orchestration, or when a skill names a role (Reviewer, Checker).
+description: Decide what goes to a subagent, set its role and model, brief it, and check what it returns. Use before every subagent spawn, even when told to use subagents, parallel agents or orchestration, and when a skill names a role (Reviewer, Checker).
 ---
 
 # Subagents
@@ -30,7 +30,7 @@ Every subagent gets a role before it is spawned, and the role alone sets its mod
 
 | Role | Use when |
 | --- | --- |
-| Runner | It runs a command given word for word, or copies given fields out of given files or logs, and reports the result verbatim, with nothing to search, choose or summarize. You check it mechanically: the exit code, a rerun, a spot check against the source. Only for output too long or noisy to pull into your own context: a full test suite, a large log. |
+| Runner | It runs a command given word for word, or copies given fields out of given files or logs, and reports the result verbatim, with nothing to search, choose or summarize. Before you use its result, check it yourself: rerun one reported failure, or read a reported line in the source. Its own exit code or summary is the claim, not the check. Only for output too long or noisy to pull into your own context: a full test suite, a large log. |
 | Scout | It finds what a grep cannot settle: matches you can only judge by reading the code (calls through aliases or dynamic dispatch, writes through an ORM and raw SQL, every place a value flows), over more code than you want in your context. The answer is found, not reasoned out. |
 | Checker | It applies a closed list of rules to given work, and you verify each finding by reading it. |
 | Implementer | It edits, and all of these hold: the spec is complete, an existing pattern shows the way, it stays inside known files, and a test or typecheck shows whether it worked. |
@@ -68,11 +68,14 @@ Pick it by these, in order:
 
 - One owner per workstream. Files or modules two workstreams would both edit go to one agent, unless each agent gets its own worktree and you have a plan for merging them.
 - Independent workstreams start together, in one message. One that needs another's result starts after it reports, unless you write the contract it needs first (a type, a schema, an API shape) and give it to both.
-- With more than one agent, add each workstream to the session's task list with its role before the first spawn, and mark it as agents report. Without a task-list tool, list them in one line per workstream.
 
 ## Spawn
 
 - **Know your tools first.** Before you pick roles, see which spawn tools the session offers: the native subagent tool, any delegate tool the harness adds, and whether one reaches the other provider for the Reviewer. Use each the way the harness's own instructions say.
+- **Task list before spawning.** With more than one agent, create one task per workstream, naming its role, before the first spawn, and mark each as its agent reports. The tool is `TaskCreate` or the session's task-list tool; when it is deferred, load it first. Without one, list the workstreams in one line each.
+
+  Wrong: the skill loads, and two Scouts start in the next message with the task list empty.
+  Right: `TaskCreate` for "Scout: callers in api/" and "Scout: callers in web/", then both spawns in one message.
 - **Keep working while they run.** When you have work of your own to do meanwhile, start agents through the harness's background option. You are notified when one finishes: don't poll, and never report or predict a result before it arrives.
 - **Continue, don't respawn.** Rework, fixes and follow-ups go to the agent that holds the context, continued, not to a fresh one.
 - **Limits.** At most three agents that build, test or drive an app at once, and at most one that drives a browser or the app, unless the user sets other limits. Read-only agents don't count. Reviewers start no dev server, browser or full test suite. An agent that starts a long-running process stops it before it reports.
