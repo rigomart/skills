@@ -1,0 +1,309 @@
+#!/usr/bin/env node
+// fake-gh: a stand-in for the GitHub CLI inside an eval run. It answers the
+// commands ship-changes uses from a JSON state file, checks pushes against the
+// fixture's local remote, and logs every call so checks can read what the agent did.
+//
+// EVAL_GH_STATE  directory holding state.json (seeded by the scenario) and calls.jsonl
+"use strict";
+const fs = require("fs");
+const path = require("path");
+const { execFileSync, spawnSync } = require("child_process");
+
+const dir = process.env.EVAL_GH_STATE;
+if (!dir) { process.stderr.write("fake-gh: EVAL_GH_STATE is not set\n"); process.exit(4); }
+const statePath = path.join(dir, "state.json");
+const state = JSON.parse(fs.readFileSync(statePath, "utf8"));
+const argv = process.argv.slice(2);
+
+let stdinText = "";
+function readStdin() { try { return fs.readFileSync(0, "utf8"); } catch { return ""; } }
+
+function finish(code, out, err) {
+  if (out) process.stdout.write(out.endsWith("\n") ? out : out + "\n");
+  if (err) process.stderr.write(err.endsWith("\n") ? err : err + "\n");
+  fs.appendFileSync(path.join(dir, "calls.jsonl"),
+    JSON.stringify({ argv, cwd: process.cwd(), exit: code, stdin: stdinText || undefined }) + "\n");
+  fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
+  process.exit(code);
+}
+
+// Flags that take a value; everything else starting with - is boolean.
+const VALUE_FLAGS = new Set(["--json", "--jq", "-q", "--template", "-t", "--title", "-b", "--body",
+  "-F", "--body-file", "-B", "--base", "-H", "--head", "--attach", "-l", "--label", "--add-label",
+  "-a", "--assignee", "-r", "--reviewer", "-s", "--state", "-S", "--search", "-L", "--limit",
+  "-R", "--repo", "-X", "--method", "-f", "--raw-field", "--field", "-m", "--milestone",
+  "--remove-label", "--interval", "-i", "--author", "-A"]);
+
+function parse(args) {
+  const flags = {}; const pos = [];
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a.startsWith("--") && a.includes("=")) {
+      const k = a.slice(0, a.indexOf("=")); (flags[k] = flags[k] || []).push(a.slice(a.indexOf("=") + 1));
+    } else if (VALUE_FLAGS.has(a)) {
+      (flags[a] = flags[a] || []).push(args[++i]);
+    } else if (a.startsWith("-") && a !== "-") {
+      (flags[a] = flags[a] || []).push(true);
+    } else pos.push(a);
+  }
+  const get = (...names) => { for (const n of names) if (flags[n]) return flags[n][flags[n].length - 1]; return undefined; };
+  const all = (...names) => names.flatMap((n) => flags[n] || []);
+  const has = (...names) => names.some((n) => flags[n]);
+  return { flags, pos, get, all, has };
+}
+
+function git(...args) {
+  try { return execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); }
+  catch { return ""; }
+}
+const currentBranch = () => git("branch", "--show-current");
+const remoteHead = (branch) => (git("ls-remote", "--heads", "origin", branch).split(/\s+/)[0] || "");
+
+// Output JSON, narrowed to --json fields and filtered through --jq like gh does.
+function emit(p, value, textFallback) {
+  const fields = p.get("--json");
+  const jq = p.get("--jq", "-q");
+  if (fields === undefined && jq === undefined) return finish(0, textFallback !== undefined ? textFallback : JSON.stringify(value, null, 2));
+  let v = value;
+  if (fields && fields !== true) {
+    const keys = fields.split(",").map((s) => s.trim()).filter(Boolean);
+    const pick = (o) => Object.fromEntries(keys.map((k) => [k, o[k] === undefined ? null : o[k]]));
+    v = Array.isArray(value) ? value.map(pick) : pick(value);
+  }
+  if (!jq) return finish(0, JSON.stringify(v, null, 2));
+  const r = spawnSync("jq", ["-r", jq], { input: JSON.stringify(v), encoding: "utf8" });
+  if (r.status !== 0) return finish(1, "", `failed to parse jq expression (line 1, column 1)\n${r.stderr}`);
+  return finish(0, r.stdout.replace(/\n$/, ""));
+}
+
+const repo = state.repo;
+const repoUrl = `https://github.com/${repo.nameWithOwner}`;
+const prUrl = (n) => `${repoUrl}/pull/${n}`;
+
+function prJson(pr) {
+  return {
+    number: pr.number, title: pr.title, body: pr.body, state: pr.state, url: prUrl(pr.number),
+    baseRefName: pr.base, headRefName: pr.head, headRefOid: pr.headRefOid || remoteHead(pr.head),
+    isDraft: !!pr.draft, mergeable: "MERGEABLE",
+    mergeStateStatus: pr.state !== "OPEN" ? "UNKNOWN" : checksDone(pr) || !(state.required_checks || []).length ? "CLEAN" : "BLOCKED",
+    reviewDecision: "", autoMergeRequest: pr.autoMerge ? { mergeMethod: pr.autoMerge } : null,
+    statusCheckRollup: (state.checks || []).map((c) => checksDone(pr)
+      ? { name: c, status: "COMPLETED", conclusion: "SUCCESS" } : { name: c, status: "IN_PROGRESS", conclusion: "" }),
+    mergedAt: pr.state === "MERGED" ? "2026-11-06T12:00:00Z" : null, closed: pr.state !== "OPEN",
+    mergeCommit: pr.mergeCommit ? { oid: pr.mergeCommit } : null,
+    author: { login: "eval-bot" }, labels: [], files: [], commits: [],
+  };
+}
+
+// CI on a PR is pending until someone runs `gh pr checks --watch`, which "waits"
+// for it to pass. Passing checks merge a PR whose auto-merge is armed, like GitHub.
+const checksDone = (pr) => state.checks_state !== "pending" || !!pr.checksDone;
+function completeChecks(pr) {
+  pr.checksDone = true;
+  if (pr.autoMerge && pr.state === "OPEN") land(pr);
+}
+
+// Squash-merge like GitHub: one commit on the base with the head's tree, then
+// delete the head branch.
+function land(pr) {
+  const remote = git("remote", "get-url", "origin");
+  const g = (...a) => execFileSync("git", ["-C", remote, ...a], { encoding: "utf8" }).trim();
+  const tree = g("rev-parse", `${pr.head}^{tree}`);
+  const commit = g("commit-tree", tree, "-p", pr.base, "-m", `${pr.title} (#${pr.number})`);
+  g("update-ref", `refs/heads/${pr.base}`, commit);
+  g("update-ref", "-d", `refs/heads/${pr.head}`);
+  pr.state = "MERGED"; pr.mergeCommit = commit;
+}
+
+function findPr(sel) {
+  if (sel === undefined) {
+    const b = currentBranch();
+    return state.prs.find((p) => p.head === b && p.state === "OPEN") || state.prs.find((p) => p.head === b);
+  }
+  const m = String(sel).match(/(\d+)$/);
+  if (/^#?\d+$/.test(sel) || (m && sel.includes("/pull/"))) return state.prs.find((p) => p.number === Number(m[1]));
+  return state.prs.find((p) => p.head === sel && p.state === "OPEN") || state.prs.find((p) => p.head === sel);
+}
+
+function readBody(p) {
+  const file = p.get("-F", "--body-file");
+  if (file === "-") { stdinText = readStdin(); return stdinText; }
+  if (file) {
+    try { return fs.readFileSync(path.resolve(process.cwd(), file), "utf8"); }
+    catch { return finish(1, "", `failed to read file ${file}: open ${file}: no such file or directory`); }
+  }
+  return p.get("-b", "--body");
+}
+
+function help(cmd) {
+  const extra = cmd.startsWith("pr create") || cmd.startsWith("pr edit") || cmd.startsWith("pr comment")
+    ? "\n  -a, --attach file        Attach a file and reference it in the body" : "";
+  return finish(0, `Usage: gh ${cmd} [flags]\n\nFLAGS${extra}\n  (fake gh for evals: common flags accepted)`);
+}
+
+const [group, sub, ...rest] = argv;
+const p = parse(argv.slice(2));
+if (argv.includes("--help") || argv.includes("-h") || group === "help") help(argv.filter((a) => !a.startsWith("-")).join(" "));
+if (group === "--version" || group === "version") finish(0, "gh version 2.83.0 (2026-10-01)");
+
+switch (group) {
+  case "auth":
+    if (sub === "status") finish(0, "github.com\n  ✓ Logged in to github.com account eval-bot (keyring)\n  - Token scopes: 'repo', 'workflow'");
+    finish(0, "");
+  case "repo": {
+    if (sub !== "view") break;
+    const v = { name: repo.name, nameWithOwner: repo.nameWithOwner, owner: { login: repo.nameWithOwner.split("/")[0] },
+      defaultBranchRef: { name: repo.default_branch }, visibility: repo.visibility || "PUBLIC",
+      isPrivate: repo.visibility === "PRIVATE", url: repoUrl, description: repo.description || "",
+      autoMergeAllowed: repo.allow_auto_merge, squashMergeAllowed: repo.allow_squash_merge,
+      mergeCommitAllowed: repo.allow_merge_commit, rebaseMergeAllowed: repo.allow_rebase_merge,
+      deleteBranchOnMerge: true };
+    emit(p, v, `${repo.nameWithOwner}\n${repo.description || ""}`);
+  }
+  case "api": {
+    const pa = parse(argv.slice(1));
+    const ep = (pa.pos[0] || "").replace(/^\//, "").replace("{owner}/{repo}", repo.nameWithOwner).split("?")[0];
+    const base = `repos/${repo.nameWithOwner}`;
+    let v;
+    if (ep === base) v = { name: repo.name, full_name: repo.nameWithOwner, default_branch: repo.default_branch,
+      allow_auto_merge: repo.allow_auto_merge, allow_squash_merge: repo.allow_squash_merge,
+      allow_merge_commit: repo.allow_merge_commit, allow_rebase_merge: repo.allow_rebase_merge,
+      delete_branch_on_merge: true, private: repo.visibility === "PRIVATE", visibility: (repo.visibility || "PUBLIC").toLowerCase() };
+    else if (ep.startsWith(`${base}/branches/`) && !ep.endsWith("/protection")) {
+      const b = decodeURIComponent(ep.slice(`${base}/branches/`.length));
+      if (!remoteHead(b)) finish(1, "", "gh: Branch not found (HTTP 404)");
+      const req = b === repo.default_branch ? (state.required_checks || []) : [];
+      v = { name: b, protected: req.length > 0,
+        protection: { enabled: req.length > 0, required_status_checks: { enforcement_level: req.length ? "non_admins" : "off", contexts: req } } };
+    } else if (ep.startsWith(`${base}/branches/`) && ep.endsWith("/protection")) {
+      const b = decodeURIComponent(ep.slice(`${base}/branches/`.length, -"/protection".length));
+      const req = b === repo.default_branch ? (state.required_checks || []) : [];
+      if (!req.length) finish(1, "", "gh: Branch not protected (HTTP 404)");
+      v = { required_status_checks: { strict: false, contexts: req } };
+    } else if (ep.startsWith(`${base}/rules/branches/`)) v = [];
+    else if (ep === `${base}/pulls`) v = state.prs.filter((x) => x.state === "OPEN").map((x) => ({ number: x.number, title: x.title, head: { ref: x.head }, base: { ref: x.base }, html_url: prUrl(x.number), draft: !!x.draft }));
+    else finish(1, "", `gh: Not Found (HTTP 404)`);
+    const jq = pa.get("--jq", "-q");
+    if (!jq) finish(0, JSON.stringify(v, null, 2));
+    const r = spawnSync("jq", ["-r", jq], { input: JSON.stringify(v), encoding: "utf8" });
+    finish(r.status === 0 ? 0 : 1, r.stdout.replace(/\n$/, ""), r.status === 0 ? "" : r.stderr);
+  }
+  case "issue": {
+    const issues = state.issues || {};
+    if (sub === "view") {
+      const n = String(p.pos[0] || "").replace(/^#/, "").replace(/.*\/issues\//, "");
+      const is = issues[n];
+      if (!is) finish(1, "", `GraphQL: Could not resolve to an issue or pull request with the number of ${n}. (repository.issue)`);
+      const v = { number: Number(n), title: is.title, body: is.body, state: "OPEN", url: `${repoUrl}/issues/${n}`, labels: [], comments: [] };
+      emit(p, v, `${is.title} ${repo.nameWithOwner}#${n}\nOpen\n\n${is.body}`);
+    }
+    if (sub === "list") {
+      const list = Object.entries(issues).map(([n, is]) => ({ number: Number(n), title: is.title, state: "OPEN", url: `${repoUrl}/issues/${n}`, labels: [] }));
+      emit(p, list, list.map((i) => `${i.number}\tOPEN\t${i.title}`).join("\n"));
+    }
+    break;
+  }
+  case "pr": {
+    switch (sub) {
+      case "create": {
+        if (p.has("--web", "-w")) finish(1, "", "fake-gh: --web is not available in this environment");
+        const head = p.get("-H", "--head") || currentBranch();
+        const base = p.get("-B", "--base") || repo.default_branch;
+        const oid = remoteHead(head);
+        if (!oid) finish(1, "", `aborted: you must first push the current branch to a remote, or use the --head flag`);
+        const dup = state.prs.find((x) => x.head === head && x.state === "OPEN");
+        if (dup) finish(1, "", `a pull request for branch "${head}" into branch "${dup.base}" already exists:\n${prUrl(dup.number)}`);
+        let title = p.get("-t", "--title");
+        let body = readBody(p);
+        if (p.has("--fill", "-f")) { title = title || git("log", "-1", "--format=%s"); body = body || git("log", "-1", "--format=%b"); }
+        if (title === undefined || body === undefined) finish(1, "", "must provide `--title` and `--body` (or `--fill` or `--body-file`) when not running interactively");
+        const number = state.next_pr++;
+        state.prs.push({ number, title, body, base, head, headRefOid: oid, draft: p.has("-d", "--draft"), state: "OPEN",
+          attachments: p.all("--attach") });
+        finish(0, prUrl(number));
+      }
+      case "list": {
+        const st = (p.get("-s", "--state") || "open").toUpperCase();
+        let list = state.prs.filter((x) => st === "ALL" || x.state === st);
+        if (p.get("-H", "--head")) list = list.filter((x) => x.head === p.get("-H", "--head"));
+        if (p.get("-B", "--base")) list = list.filter((x) => x.base === p.get("-B", "--base"));
+        const q = p.get("-S", "--search");
+        if (q) list = list.filter((x) => (x.title + " " + x.body).includes(q) || (x.headRefOid || "").startsWith(q));
+        const v = list.map(prJson);
+        emit(p, v, v.map((x) => `${x.number}\t${x.title}\t${x.headRefName}\t${x.state}`).join("\n") || "no pull requests match your search");
+      }
+      case "view": {
+        const pr = findPr(p.pos[0]);
+        if (!pr) finish(1, "", `no pull requests found for branch "${p.pos[0] || currentBranch()}"`);
+        const v = prJson(pr);
+        emit(p, v, `${v.title} ${repo.nameWithOwner}#${v.number}\n${v.state} • eval-bot wants to merge into ${v.baseRefName} from ${v.headRefName}\n\n${v.body}\n\nView this pull request on GitHub: ${v.url}`);
+      }
+      case "edit": {
+        const pr = findPr(p.pos[0]);
+        if (!pr) finish(1, "", `no pull requests found for branch "${p.pos[0] || currentBranch()}"`);
+        const body = readBody(p);
+        if (body !== undefined) pr.body = body;
+        if (p.get("-t", "--title")) pr.title = p.get("-t", "--title");
+        if (p.get("-B", "--base")) pr.base = p.get("-B", "--base");
+        pr.attachments = (pr.attachments || []).concat(p.all("--attach"));
+        finish(0, prUrl(pr.number));
+      }
+      case "ready": {
+        const pr = findPr(p.pos[0]); if (pr) pr.draft = false;
+        finish(0, `✓ Pull request ${repo.nameWithOwner}#${pr ? pr.number : "?"} is marked as "ready for review"`);
+      }
+      case "merge": {
+        const pr = findPr(p.pos[0]);
+        if (!pr) finish(1, "", `no pull requests found for branch "${p.pos[0] || currentBranch()}"`);
+        const method = p.has("--squash", "-s") ? "squash" : p.has("--rebase", "-r") ? "rebase" : p.has("--merge", "-m") ? "merge" : null;
+        if (!method) finish(1, "", "--merge, --rebase, or --squash required when not running interactively");
+        if (p.has("--disable-auto")) { pr.autoMerge = null; finish(0, `✓ Auto-merge disabled for pull request ${repo.nameWithOwner}#${pr.number}`); }
+        if (pr.state !== "OPEN") finish(1, "", `Pull request ${repo.nameWithOwner}#${pr.number} was already merged`);
+        const protectedBase = pr.base === repo.default_branch && (state.required_checks || []).length > 0;
+        if (p.has("--auto")) {
+          if (!repo.allow_auto_merge) finish(1, "", "GraphQL: Auto merge is not allowed for this repository (enablePullRequestAutoMerge)");
+          if (!protectedBase || checksDone(pr)) {
+            land(pr);
+            finish(0, `✓ Squashed and merged pull request ${repo.nameWithOwner}#${pr.number} (${pr.title})`);
+          }
+          pr.autoMerge = method;
+          finish(0, `✓ Pull request ${repo.nameWithOwner}#${pr.number} will be automatically merged via ${method} when all requirements are met`);
+        }
+        if (protectedBase && !checksDone(pr) && !p.has("--admin"))
+          finish(1, "", `X Pull request ${repo.nameWithOwner}#${pr.number} is not mergeable: the base branch policy prohibits the merge.\nTo have the pull request merged after all the requirements have been met, add the \`--auto\` flag.`);
+        land(pr);
+        finish(0, `✓ Squashed and merged pull request ${repo.nameWithOwner}#${pr.number} (${pr.title})`);
+      }
+      case "checks": {
+        const pr = findPr(p.pos[0]);
+        if (!pr) finish(1, "", `no pull requests found for branch "${p.pos[0] || currentBranch()}"`);
+        if (p.has("--watch")) completeChecks(pr);
+        const done = checksDone(pr);
+        const checks = (state.checks || []).map((c) => ({ name: c, state: done ? "SUCCESS" : "IN_PROGRESS", bucket: done ? "pass" : "pending", workflow: "CI", link: `${repoUrl}/actions/runs/1` }));
+        const text = checks.map((c) => `${c.name}\t${c.bucket}\t${done ? "1m2s" : "0"}\t${c.link}`).join("\n")
+          + (done ? "\n\nAll checks were successful" : `\n\nSome checks are still pending\n0 failing, 0 successful, 0 skipped, and ${checks.length} pending checks`);
+        if (p.get("--json") !== undefined || p.get("--jq", "-q") !== undefined) emit(p, checks);
+        finish(done ? 0 : 8, text);
+      }
+      case "diff": {
+        const pr = findPr(p.pos[0]);
+        if (!pr) finish(1, "", `no pull requests found for branch "${p.pos[0] || currentBranch()}"`);
+        git("fetch", "-q", "origin");
+        const args = p.has("--name-only") ? ["--name-only"] : [];
+        finish(0, git("diff", ...args, `origin/${pr.base}...origin/${pr.head}`));
+      }
+      case "comment":
+        finish(0, `${prUrl((findPr(p.pos[0]) || {}).number)}#issuecomment-1`);
+      case "status":
+        finish(0, `Current branch\n  ${(findPr() && "#" + findPr().number) || "There is no pull request associated with [" + currentBranch() + "]"}`);
+    }
+    break;
+  }
+  case "run": {
+    const runs = [{ databaseId: 1, status: "completed", conclusion: "success", name: "CI", headBranch: currentBranch(), url: `${repoUrl}/actions/runs/1` }];
+    if (sub === "list") emit(p, runs, `completed\tsuccess\tCI\t${currentBranch()}\t1`);
+    if (sub === "view" || sub === "watch") finish(0, `✓ ${currentBranch()} CI · 1\nTriggered via pull_request\n\nJOBS\n✓ test in 1m2s`);
+    break;
+  }
+}
+finish(1, "", `fake-gh: unsupported command "gh ${argv.join(" ")}"`);

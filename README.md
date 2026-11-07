@@ -60,4 +60,6 @@ Each skill is a folder under `skills/` with a `SKILL.md`. Add one by running `np
 
 Playbooks (`skills/do/playbooks/`) name the skills they use, never the other way around: a skill stays usable on its own, without `do`.
 
+`evals/` runs a skill's scenarios headless on a chosen model, to prove it on the cheapest model expected to run it. See [evals/README.md](evals/README.md).
+
 `docs/research/` holds the notes behind the skills' design. It has no `SKILL.md`, so `npx skills` never installs it.
