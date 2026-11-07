@@ -1,6 +1,6 @@
 ---
 name: recall
-description: Rebuild where work stands from live state, the repo's record and past chats, and brief a user who has forgotten the details. Use when asked for status, what's pending or next, where things were left, or to be caught up.
+description: Rebuild where work stands from live state, the repo and past chats, and brief a user who forgot the details. Use when asked the status of the work or of one bug, feature or release, what's pending or next, where things were left, or to catch up.
 ---
 
 # Recall
