@@ -23,11 +23,11 @@ Read the playbook you picked.
 
 ## 2. Copy the steps
 
-Open the playbook and add each numbered step to the session's task list as its own item, the text copied word for word, before any item of your own. Use the session's task-list or plan tool. Without one, keep the list as a checklist in `.evidence/<task>/steps.md`, excluded from git through the file `git rev-parse --git-path info/exclude` prints.
+Run `scripts/steps <playbook>` from this skill's folder. It prints the playbook's steps, one per line. Add each line to the session's task list as its own item, in order, before any item of your own: the line's first sentence is the item's title, and the whole line, copied as printed, is its description. Every task gets the list, even a question answered in one read. Use the session's task-list or plan tool. Without one, write the lines as a checklist in `.evidence/<task>/steps.md`, excluded from git through the file `git rev-parse --git-path info/exclude` prints.
 
-Then work the list in order. Mark each item done when its step is done. A step you decide not to do keeps its text and gets `skip: <reason>` after it, so the user sees what was skipped and why. A skipped step goes back to to-do when the user later asks for it.
+Then work the list in order. Mark each item done when its step is done. A step you decide not to do keeps its title and description, and `skip: <reason>` goes at the end of its title, so the user sees what was skipped and why. A skipped step goes back to to-do when the user later asks for it.
 
-Done when the list holds every step of the playbook, before you change any other file.
+Done when the list holds every step of the playbook, before step 1 starts: before you load a skill a step names or change any other file.
 
 ## 3. Stay on
 
