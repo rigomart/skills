@@ -114,7 +114,7 @@ Every template, in every PR:
 
 ### Screenshots
 
-A change a user can see carries images in its PR: UI, layout, styling, copy, icons, an app's or a TUI's screens. A `fix` carries them only when the symptom shows on screen. CLI output goes in a text block of the real output instead, which a reviewer can search and diff.
+A change a user can see carries images in its PR: UI, layout, styling, copy, icons, an app's or a TUI's screens. A `fix` carries them only when the symptom shows on screen. CLI output is not an image: a text block of the real output goes in Verification, which a reviewer can search and diff, and the PR has no Screenshots section.
 
 Take, check, and attach them as [references/screenshots.md](references/screenshots.md) says.
 
