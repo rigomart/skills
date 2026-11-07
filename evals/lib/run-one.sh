@@ -14,13 +14,15 @@ if ! (source "$EVAL_LIB/fixture.sh" && source "$sdir/setup.sh") > "$out/setup.lo
   echo "SETUP_FAILED" > "$out/checks.txt"; echo "[$scenario #$run] setup failed, see $out/setup.log" >&2; exit 0
 fi
 mkdir -p "$REPO/.claude/skills"
-cp -R "$EVAL_HERE/../skills/$EVAL_SKILL" "$REPO/.claude/skills/$EVAL_SKILL"
+for s in "$EVAL_SKILL" $(cat "$sdir/skills" 2>/dev/null); do
+  cp -R "$EVAL_HERE/../skills/$s" "$REPO/.claude/skills/$s"
+done
 echo ".claude/" >> "$REPO/.git/info/exclude"
 first_pr=$(jq .next_pr "$EVAL_GH_STATE/state.json")
 
 start=$(date +%s)
 (cd "$REPO" && env -u GH_TOKEN -u GITHUB_TOKEN -u GH_HOST \
-  PATH="$work/bin:$PATH" GH_CONFIG_DIR="$work/ghconfig" GH_PROMPT_DISABLED=1 \
+  PATH="$work/bin:$PATH" GH_CONFIG_DIR="$work/ghconfig" GH_PROMPT_DISABLED=1 CLAUDE_CODE_ENABLE_TODO_TOOLS=1 \
   perl -e 'alarm shift; exec @ARGV' "$EVAL_TIMEOUT" \
   claude -p "$(cat "$sdir/prompt.txt")" \
     --model "$EVAL_MODEL" --effort "$EVAL_EFFORT" \
