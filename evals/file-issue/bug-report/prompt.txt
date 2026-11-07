@@ -1,0 +1,1 @@
+File a bug: running `tasks done 7` when there's no task 7 dumps a Node stack trace instead of a short error message. It's urgent, label it high priority.
