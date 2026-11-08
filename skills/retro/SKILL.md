@@ -1,6 +1,6 @@
 ---
 name: retro
-description: Review a coding session for what slowed or misled the agent, and propose fixes to its environment (checks, steering files, skills, tools, access), most costly first. Type /retro, or /retro <session> for a past one.
+description: Review a coding session for what slowed or misled the agent, and propose fixes to its environment (checks, steering files, skills, tools, access), most costly first. Only when the user starts it, by /retro or by name, for this or a past session.
 disable-model-invocation: true
 ---
 
