@@ -8,7 +8,7 @@ awk 'seen{print} /^$/{seen=1}' "$here/prompt.txt" > "$src"
 final_text | grep -Ev '^[[:space:]]*(```|~~~)' > "$reply"
 awk -v out="$out" -v report="$report" 'BEGIN{RS=""} {
   bare=$0; gsub(/"[^"]*"/, "", bare)
-  if (tolower(bare) ~ /scan|subagent|cold[- ]?read|fresh[- ]?read|reread|unslop|what (i )?changed|changes:|(^|\n)[-*]? ?(cut|replaced|changed|split|kept|removed|dropped|rewrote|moved|turned) |ready to paste|paste this|slack-ready|here.s the|became|edits? (that )?(might|could|change)|you could|if you want|(^|[^a-z])i (cut|changed|kept|left|replaced|dropped|removed|rewrote|split|made|moved|also|did)/) print $0 "\n" > report
+  if (tolower(bare) ~ /scan|subagent|cold[- ]?read|fresh[- ]?read|reread|unslop|what (i )?changed|changes:|(^|\n)[-*]? ?(cut|replaced|changed|split|kept|removed|dropped|rewrote|moved|turned) |ready to paste|saved (at|to|in) |paste this|slack-ready|here.s the|became|edits? (that )?(might|could|change)|you could|if you want|(^|[^a-z])i (cut|changed|kept|left|replaced|dropped|removed|rewrote|split|made|moved|also|did)/) print $0 "\n" > report
   else print $0 "\n" > out
 }' "$reply"
 check_skill_loaded
@@ -21,6 +21,7 @@ check_kept numbers_kept numbers_in "$src" "$out"
 check_no_new_numbers "$src" "$out"
 check_facts "$here/facts" "$out"
 check_other_files_untouched none
+check_cold_reader no
 check_report_names_scan
 check_report_names_cold_reader
 check_report_clean "$src" "$report"

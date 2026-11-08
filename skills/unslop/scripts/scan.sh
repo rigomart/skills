@@ -5,6 +5,8 @@
 # Skips fenced code blocks and inline code spans, and reads quoted lines without their ">" markers.
 # Prints one line per hit:
 #   <file>:<line>: <rule>: <matched text>
+# then, per file, its word count outside fenced code and whether it needs a cold reader (over 400 words):
+#   <file>: <n> words, over 400: run a cold reader
 # Exits 1 if anything was flagged, 0 if clean, 2 on bad input.
 
 set -u
@@ -37,23 +39,26 @@ my @rules = (
   ["decorative emoji, remove it", qr/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}\x{2B50}\x{2705}]/],
 );
 
+my $cold_reader_over = 400;
 my $small = qr/^(?:a|an|and|as|at|but|by|for|in|of|on|or|the|to|vs\.?|with)$/;
 my $hits = 0;
 
 for my $file (@ARGV) {
   my $fh;
   if ($file eq "-") { $fh = \*STDIN } else { open($fh, "<", $file) or die "scan.sh: cannot read $file\n" }
+  my $name = $file eq "-" ? "stdin" : $file;
   my $fenced = 0;
   my $n = 0;
+  my $words = 0;
   while (my $line = <$fh>) {
     $n++;
     chomp $line;
     if ($line =~ /^\s*(?:```|~~~)/) { $fenced = !$fenced; next }
     next if $fenced;
     $line =~ s/^\s*(?:>\s?)+//;
+    $words += () = $line =~ /\S*[\p{L}\p{N}]\S*/g;
     $line =~ s/`[^`]*`//g;
     $line =~ s/\]\([^)]*\)/]/g;
-    my $name = $file eq "-" ? "stdin" : $file;
     for my $r (@rules) {
       my ($rule, $re) = @$r;
       while ($line =~ /$re/g) {
@@ -75,6 +80,8 @@ for my $file (@ARGV) {
       }
     }
   }
+  print "$name: $words words, ", $words > $cold_reader_over
+    ? "over $cold_reader_over: run a cold reader\n" : "$cold_reader_over or fewer: no cold reader\n";
 }
 exit($hits ? 1 : 0);
 ' "$@"

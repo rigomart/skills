@@ -21,6 +21,7 @@ check_no_new_numbers "$src" "$out"
 check_facts "$here/facts" "$out"
 check_headings_kept "$src" "$out"
 check_other_files_untouched README.md
+check_cold_reader no
 check_report_names_scan
 check_report_names_cold_reader
 orig=$(mktemp); git -C "$REPO" show HEAD:README.md > "$orig"

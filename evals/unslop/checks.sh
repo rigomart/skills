@@ -36,13 +36,13 @@ check_facts() { # check_facts <facts file> <output>: a line starting with ! must
 
 check_scan_clean() { # check_scan_clean <name> <file>: the bundled scan flags nothing
   local out
-  if out=$(bash "$SCAN" "$2" 2>&1); then pass "$1"; else fail "$1" "$(printf '%s' "$out" | sed -E 's/^[^:]*:[0-9]+: //' | head -3 | paste -sd'|' -)"; fi
+  if out=$(bash "$SCAN" "$2" 2>&1); then pass "$1"; else fail "$1" "$(printf '%s' "$out" | sed -nE 's/^[^:]*:[0-9]+: //p' | head -3 | paste -sd'|' -)"; fi
 }
 
-check_headings_kept() { # check_headings_kept <source> <output>: same headings, case aside
+check_headings_kept() { # check_headings_kept <source> <output>: same headings, case and backticks aside
   local want got
-  want=$(grep -E '^#+ ' "$1" | tr '[:upper:]' '[:lower:]')
-  got=$(grep -E '^#+ ' "$2" | tr '[:upper:]' '[:lower:]')
+  want=$(grep -E '^#+ ' "$1" | tr '[:upper:]' '[:lower:]' | tr -d '`')
+  got=$(grep -E '^#+ ' "$2" | tr '[:upper:]' '[:lower:]' | tr -d '`')
   if [ "$want" = "$got" ]; then pass headings_kept; else fail headings_kept "headings were [$(printf '%s' "$got" | paste -sd, -)]"; fi
 }
 
@@ -66,7 +66,7 @@ check_report_clean() { # check_report_clean <source> [report file]: the report i
   # never pass. The report is the whole final reply unless a file holding it is given.
   local f hits; f=$(mktemp)
   if [ -n "${2:-}" ]; then sed -E 's/"[^"]*"//g' "$2"; else reply_for_scan; fi | uncite "$1" > "$f"
-  hits=$(bash "$SCAN" "$f" 2>&1 | sed -E 's/^[^:]*:[0-9]+: //' | while IFS= read -r h; do
+  hits=$(bash "$SCAN" "$f" 2>&1 | sed -nE 's/^[^:]*:[0-9]+: //p' | while IFS= read -r h; do
     if printf '%s' "$h" | grep -Eq '^(AI vocabulary|fancy|filler|stacked hedge|signposting|chat phrase|decorative emoji)' \
       && grep -Fiq -- "${h##*: }" "$1"; then continue; fi
     printf '%s\n' "$h"
@@ -78,12 +78,54 @@ check_report_clean() { # check_report_clean <source> [report file]: the report i
 check_ran_scan() { check_ran ran_scan 'scan\.sh'; }
 
 check_report_names_scan() {
-  if final_text | grep -Eiq 'scan'; then pass report_names_scan; else fail report_names_scan "final reply does not mention the scan"; fi
+  if final_text | grep -Eiq 'scan|(writing|prose|style) check'; then pass report_names_scan; else fail report_names_scan "final reply does not mention the scan"; fi
 }
 
 check_report_names_cold_reader() {
-  if final_text | grep -Eiq '(cold|fresh|separate|second|independent)[- ]?read|fresh (sub)?agent|subagent'; then pass report_names_cold_reader
+  if final_text | grep -Eiq '(cold|fresh|separate|second|independent)[- ]?read|fresh[- ]eyes|second review|fresh (sub)?agent|subagent'; then pass report_names_cold_reader
   else fail report_names_cold_reader "final reply does not say whether a cold reader ran"; fi
+}
+
+# writes_of <path>: the transcript line of each main-agent Write or Edit of the path.
+writes_of() { jq -r --arg f "$1" 'select(.type=="assistant" and .parent_tool_use_id == null) | input_line_number as $n
+  | .message.content[]? | select(.type=="tool_use" and (.name=="Write" or .name=="Edit" or .name=="MultiEdit")
+  and ((.input.file_path // "") | endswith($f))) | $n' "$TRANSCRIPT"; }
+# spawn_lines: "<transcript line> <spawn id>" per subagent spawn.
+spawn_lines() { jq -r 'select(.type=="assistant") | input_line_number as $n | .message.content[]?
+  | select(.type=="tool_use" and (.name=="Agent" or .name=="Task")) | "\($n) \(.id)"' "$TRANSCRIPT"; }
+
+check_cold_reader() { # check_cold_reader no | yes <source> <output>: whether a subagent read the rewrite.
+  # With yes, a spawn must hand over the rewrite: its prompt holds at least half of the rewrite's lines
+  # of 40 or more characters, whitespace aside (half, because the final file has the fixes made after
+  # the reader replied), or the subagent reads the output file after the main agent first wrote it.
+  # No spawn may hold a line the scan flags in the source, which a clean rewrite has to change.
+  if [ "$1" = no ]; then
+    if [ -z "$(subagent_spawns)" ]; then pass cold_reader; else fail cold_reader "spawned a subagent for text under the threshold"; fi
+    return
+  fi
+  [ -n "$(subagent_spawns)" ] || { fail cold_reader "no subagent read the rewrite"; return; }
+  local squash='s/[[:space:]]+/ /g; s/^ //; s/ $//' rel=${3#"$REPO/"} best=0 total draft="" read_file="" prompt line n at id first lines
+  lines=$(grep -Ev '^[[:space:]]*(#|```|~~~|$)' "$3" | sed -E "$squash" | awk 'length >= 40')
+  total=$(printf '%s\n' "$lines" | grep -c .)
+  while IFS= read -r prompt; do
+    prompt=$(printf '%s' "$prompt" | jq -r . | tr '\n' ' ' | sed -E "$squash")
+    n=0
+    while IFS= read -r line; do
+      case $prompt in *"$line"*) n=$((n + 1)) ;; esac
+    done <<< "$lines"
+    [ "$n" -gt "$best" ] && best=$n
+    while IFS= read -r line; do
+      case $prompt in *"$line"*) draft=1 ;; esac
+    done < <(bash "$SCAN" "$2" | sed -nE 's/^[^:]*:([0-9]+): .*/\1p/p' | sort -un | sed -nf - "$2" | sed -E "$squash" | awk 'length >= 40')
+  done < <(subagent_spawns | jq -c '.prompt // ""')
+  first=$(writes_of "$rel" | head -1)
+  while read -r at id; do
+    [ -n "$first" ] && [ "$at" -gt "$first" ] && subagent_tool_uses "$id" | grep -Fq -- "$rel" && read_file=1
+  done < <(spawn_lines)
+  if [ -n "$draft" ]; then fail cold_reader "a spawn got a line of the draft"
+  elif [ "$total" -gt 0 ] && [ $((best * 2)) -ge "$total" ]; then pass cold_reader
+  elif [ -n "$read_file" ]; then pass cold_reader
+  else fail cold_reader "the fullest spawn held $best of the rewrite's $total lines, and none read $rel after it was written"; fi
 }
 
 check_other_files_untouched() { # check_other_files_untouched <path in REPO>: no other tracked file changed
