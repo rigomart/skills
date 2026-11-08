@@ -1,6 +1,6 @@
 ---
 name: do
-description: Run a task through a playbook that fixes its steps, the skills each step loads, and its report. Type /do <task>, or /do <playbook> <task> to pick the playbook yourself.
+description: Run a task through a playbook that fixes its steps, the skills each step loads, and its report. Only when the user starts it, with /do <task> where slash commands work or by name; a playbook name first picks it.
 disable-model-invocation: true
 ---
 
@@ -17,15 +17,15 @@ You run the task through one playbook. The playbook owns the order of the work, 
 | research | needs evidence gathered before it can be answered: "what's the best X", "how could we build X", "is X feasible", "should we keep or drop X", "validate these sources", "look into X" | [playbooks/research.md](playbooks/research.md) |
 | general | everything else: a question the code or history answers in a read or two, an opinion, a status check, a chore, babysitting a PR | [playbooks/general.md](playbooks/general.md) |
 
-When the first word after `/do` names a playbook, use it. Otherwise pick from the request.
+When the task's first word names a playbook, use it. Otherwise pick from the request.
 
 Read the playbook you picked.
 
 ## 2. Copy the steps
 
-Run `scripts/steps <playbook>` from this skill's folder. It prints the playbook's steps, one per line. Add each line to the session's task list as its own item, in order, before any item of your own: the line's first sentence is the item's title, and the whole line, copied as printed, is its description. Every task gets the list, even a question answered in one read. Use the session's task-list or plan tool. Without one, write the lines as a checklist in `.evidence/<task>/steps.md`, excluded from git through the file `git rev-parse --git-path info/exclude` prints.
+Run `scripts/steps <playbook>` from this skill's folder. It prints the playbook's steps, one per line. Add each line to the session's task list as its own item, in order, before any item of your own, with the whole line copied as printed. Where items have a title and a description, the line's first sentence is the title and the whole line the description. Every task gets the list, even a question answered in one read. Use the session's task-list or plan tool. Without one, write the lines as a checklist in `.evidence/<task>/steps.md`, excluded from git through the file `git rev-parse --git-path info/exclude` prints.
 
-Then work the list in order. Mark each item done when its step is done. A step you decide not to do keeps its title and description, and `skip: <reason>` goes at the end of its title, so the user sees what was skipped and why. A skipped step goes back to to-do when the user later asks for it.
+Then work the list in order. Mark each item done when its step is done, and leave the text you copied into it as it is. A step you decide not to do keeps that text, and `skip: <reason>` goes at the end of its title (after its text, where items have no title), so the user sees what was skipped and why. A skipped step goes back to to-do when the user later asks for it.
 
 Done when the list holds every step of the playbook, before step 1 starts: before you load a skill a step names or change any other file.
 

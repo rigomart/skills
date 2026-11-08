@@ -93,8 +93,8 @@ Right: "switch to the `deploy` playbook", "load the `release` skill".
 
 ### Invocation and description
 
-- **Model-invoked** (omit `disable-model-invocation`): the agent reaches for it on its own, or another skill must reach it. Its description sits in context on every turn, so it pays for itself only if the agent would usefully fire it unprompted.
-- **User-invoked** (`disable-model-invocation: true`): fires only when a human types its name, and no other skill can call it. Use it for generators, setup and heavy runs a person should start. Its description is a one-line summary for a person browsing commands.
+- **Model-invoked** (the default): the agent reaches for it on its own, or another skill must reach it. Harnesses such as Claude Code keep its description in context on every turn, so it pays for itself only if the agent would usefully fire it unprompted.
+- **User-invoked**: runs only when a person starts it. Use it for generators, setup and heavy runs a person should start. Its description is a one-line summary for a person browsing commands, and says "Only when the user starts it", which every harness sees. Claude Code enforces it with `disable-model-invocation: true` in the frontmatter, so add that too: the skill then fires only when a human types its name, and no other skill can call it.
 
 The description is the trigger: the agent reads it to decide whether to open the skill, so a "when to use" section in the body never fires. For a model-invoked skill, say what it does in a sentence, then `Use when` and one trigger per distinct case, led by the word people actually type. Synonyms for one case are one trigger. Keep it to two short sentences, under 250 characters; how the skill works belongs in the body. `name` is kebab-case and matches the folder.
 
@@ -106,7 +106,7 @@ A playbook has no description: its row in the `do` skill's table is its trigger.
 - **A check where done is fuzzy.** End such a step or topic on a condition the agent can test: "every changed model accounted for", not "understand the code".
 - **Inline what every case needs.** Move what only some cases reach into `references/<topic>.md`, one level deep, and make the linking line say when to open it. Keep a concept's definition, rules and caveats under one heading. When `SKILL.md` runs past about 200 lines, split it by case.
 - **Scripts for deterministic work.** Validation, scaffolding and parsing go in `scripts/`. The skill says how to run each one and what its output means.
-- **Delegate by name** ("ship with the `ship-changes` skill if it is installed"). A user-invoked skill cannot be reached from another skill, so tell the user to run it.
+- **Delegate by name** ("ship with the `ship-changes` skill if it is installed"). A user-invoked skill runs only when a person starts it, so tell the user to run it.
 - **Point at the environment.** `package.json`, `--help`, config and the directory layout stay true on their own; a copy of them goes stale. Write down only what looking cannot find: the unwritten convention, the reason behind a choice, the gotcha.
 
 ### Prose

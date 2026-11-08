@@ -48,21 +48,31 @@ Pick it by these, in order:
 
 ## Models
 
-| Role | Claude | OpenAI |
-| --- | --- | --- |
-| Runner | Haiku | Luna |
-| Scout, Checker, Implementer | Sonnet | Sol |
-| Engineer, Investigator, Reviewer | Opus | Sol |
+Each role has a tier, and the tier sets the model:
 
-- **Newest version of the family.** The table names families. Read the spawn tool's models and take the highest version in the family; never an older version that is still listed, the tool's default, or the first entry.
+| Role | Tier |
+| --- | --- |
+| Runner | small |
+| Scout, Checker, Implementer | mid |
+| Engineer, Investigator, Reviewer | large |
+
+Two providers' families, as examples of the mapping:
+
+| Tier | Claude | OpenAI |
+| --- | --- | --- |
+| small | Haiku | Luna |
+| mid | Sonnet | Sol |
+| large | Opus | Sol |
+
+- **Newest in the tier.** Read the spawn tool's models and take the newest one in the tier; never an older one that is still listed, the tool's default, or the first entry.
+- **Unknown provider or missing tier.** Sort the models the tool offers into small, mid and large by what the provider says of their size or cost. When a role's tier is not offered, use the next larger one; when there is none, the largest offered, and say so. When the spawn tool cannot set a model at all, spawn anyway and say so.
 - **Your session's provider.** Subagents run on the provider your session runs on, except the Reviewer.
-- **The Reviewer crosses over.** It runs on the other provider from the one that did the work, so its verdict is independent. When the environment cannot spawn on the other provider, it runs on the same one, and you say so.
-- **Only these families.** Fable and Astra, the frontier families, run a subagent only when the user asks for one on that work. Reach the other provider only through a tool built for subagents on it, never by shelling out to a CLI (`codex exec`, `claude -p`).
-- **Effort is high, never higher,** on every spawn where the tool takes one, whatever the role.
-- **Never above your session.** When your session runs on a mid-size model (Sonnet), roles that call for a larger one run at mid size, in either column, and you say so. A small session (Haiku, Luna) runs everything at small size.
-- **Missing model.** When a role's family is not offered, use the next larger one in the same column. When the spawn tool cannot set a model at all, spawn anyway and say so.
-- **A failed run is reclassified.** When a run fails your check, sharpen the prompt first. When a sound prompt fails twice, the work met another role's criteria: rerun it under that role. When that role runs the same model (Sol covers both mid and large roles), rerun it on the other provider, or do the work yourself. A retry never moves to a smaller model.
-- **Agent types that pick their own model.** Leave the model unset for an agent type whose definition sets `model:` (`.claude/agents/*.md`, `~/.claude/agents/*.md`, a plugin's agents) or one the user configured. Set it for every other spawn: unset usually means your session's model, which skips the role.
+- **The Reviewer crosses over.** It runs on another provider from the one that did the work, so its verdict is independent. When the environment cannot spawn on another provider, it runs on the same one, and you say so. Reach another provider only through a tool built for subagents on it, never by shelling out to a CLI (`codex exec`, `claude -p`).
+- **Frontier only on request.** A tier above large (such as Fable or Astra) runs a subagent only when the user asks for one on that work.
+- **Effort.** Where the spawn tool takes an effort setting, follow the session's effort policy, from the harness or the user. Without one, leave the tool's default for every role.
+- **Never above your session.** When your session runs on a mid-size model (such as Sonnet), roles that call for a larger one run at mid size, and you say so ("the Reviewer ran at mid size, capped at this session's"). A small session (such as Haiku or Luna) runs everything at small size.
+- **A failed run is reclassified.** When a run fails your check, sharpen the prompt first. When a sound prompt fails twice, the work met another role's criteria: rerun it under that role. When that role runs the same model (Sol covers both mid and large roles), rerun it on another provider, or do the work yourself. A retry never moves to a smaller model.
+- **Configured models win.** Leave the model unset for an agent type whose definition sets one (such as `model:` in `.claude/agents/*.md`), one the user configured, or where the harness's rules say not to set it. Otherwise set it whenever the tool and session allow: unset usually means your session's model, which skips the role.
 
 ## Split the work
 
@@ -71,18 +81,18 @@ Pick it by these, in order:
 
 ## Spawn
 
-- **Know your tools first.** Before you pick roles, see which spawn tools the session offers: the native subagent tool, any delegate tool the harness adds, and whether one reaches the other provider for the Reviewer. Use each the way the harness's own instructions say.
-- **Task list before spawning.** With more than one agent, create one task per workstream, naming its role, before the first spawn, and mark each as its agent reports. The tool is `TaskCreate` or the session's task-list tool; when it is deferred, load it first. Without one, list the workstreams in one line each.
+- **Know your tools first.** Before you pick roles, see which spawn tools the session offers: the native subagent tool, any delegate tool the harness adds, and whether one reaches another provider for the Reviewer. Use each the way the harness's own instructions say.
+- **Task list before spawning.** With more than one agent, create one task per workstream, naming its role, before the first spawn, and mark each as its agent reports. Use the session's task-list tool (`TaskCreate` in Claude Code); when it is deferred, load it first. Without one, list the workstreams in one line each.
 
   Wrong: the skill loads, and two Scouts start in the next message with the task list empty.
   Right: `TaskCreate` for "Scout: callers in api/" and "Scout: callers in web/", then both spawns in one message.
-- **Keep working while they run.** When you have work of your own to do meanwhile, start agents through the harness's background option. You are notified when one finishes: don't poll, and never report or predict a result before it arrives.
+- **Keep working while they run.** When you have work of your own to do meanwhile, start agents in the background where the harness supports it, and take each result through its completion mechanism: a notification, or a wait tool. Don't poll, and never report or predict a result before it arrives.
 - **Continue, don't respawn.** Rework, fixes and follow-ups go to the agent that holds the context, continued, not to a fresh one.
 - **Limits.** At most three agents that build, test or drive an app at once, and at most one that drives a browser or the app, unless the user sets other limits. Read-only agents don't count. Reviewers start no dev server, browser or full test suite. An agent that starts a long-running process stops it before it reports.
 
 ## Brief
 
-Each agent works from its brief alone, without the conversation. Give it:
+Write each brief to stand alone, without relying on the conversation: some agents start with none of it. Give it:
 
 - its role, one objective and why it matters;
 - exact scope: paths, sources, and what is out of bounds;

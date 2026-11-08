@@ -1,6 +1,6 @@
 ---
 name: create-verification-skill
-description: Generate a project's verify-<app> skill so agents can prove changes in the real app. Web and macOS apps for now.
+description: Generate a project's verify-<app> skill so agents can prove changes in the real app. Web and macOS apps for now. Only when the user starts it.
 disable-model-invocation: true
 ---
 
@@ -35,7 +35,7 @@ Answer these from the code and only ask the user what you cannot observe. Repo c
 - **Existing tooling.** End-to-end tests, fixtures, a stack script, browser tooling already in the repo. Reuse what manages the instance; leave the developer's test suites alone.
 - **Isolation.** Whether two instances can run side by side (ports, data directories, users). If not, the generated skill says so and refuses to drive a shared instance.
 - **Features.** What a user can do, from the routes, screens, UI copy and docs. This seeds the feature files.
-- **Conventions.** Where project skills live (`.claude/skills/`, a symlink into `.agents/skills/`), what `AGENTS.md` or `CLAUDE.md` says about verification.
+- **Conventions.** Which skill directories the project uses (`.claude/skills/`, `.agents/skills/` or others) and which instruction files (`AGENTS.md`, `CLAUDE.md`), and what they say about verification.
 
 If the checkout does not build or start as it is, fix that first or report it precisely. A skill written against a broken base teaches wrong steps.
 
