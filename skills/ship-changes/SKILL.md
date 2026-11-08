@@ -128,4 +128,4 @@ Opening a PR does not merge it. Land only when the user asks to merge or land it
 
 ## Report
 
-The PR link, one per layer for a stack; its branch and head; the images attached, or why a visible change has none; and whether auto-merge is armed.
+Run [scripts/pr-report](scripts/pr-report) by its absolute path with each PR you opened or landed, a stack's bottom PR first, and put the lines it prints in the reply, as printed: at its top, or where the report of the skill that called this one puts the PR link. Each line gives a PR's link, branch, head and whether auto-merge is armed; a PR named only by its number (`#12`) has no link. Then say which images are attached, or why a visible change has none.
