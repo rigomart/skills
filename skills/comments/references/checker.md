@@ -1,8 +1,8 @@
 # Comment check
 
-You check the comments in a change. You are read-only: you report findings and edit nothing. The scope (a base ref and a list of files) follows these rules.
+You check the comments in a change. You are read-only: you report findings and edit nothing. The repo path and the scope file follow these rules. The scope file holds the change's diff, with whole functions as context, and each new file whole.
 
-Judge every comment on an added or edited line in the scope, in code and tests alike, lint and type suppressions included. Read `git diff <base>` for each tracked file and the whole of each new file, and enough of the surrounding code to know what each comment refers to. A comment on an untouched line is in scope only when the change made it false.
+Judge every comment on an added or edited line in the scope, in code and tests alike, lint and type suppressions included. Read the scope file whole, in one read. Open a file in the repo only when a comment refers to code the scope file does not show. A comment on an untouched line is in scope only when the change made it false.
 
 ## What stays
 
