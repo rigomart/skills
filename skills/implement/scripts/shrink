@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# shrink: print a path to view for each image, a copy at most 1024px on its long edge.
+#
+#   shrink <image>...
+#
+# An image larger than that is copied, scaled down, into a temp folder, and the
+# copy's path is printed. A smaller one prints its own path. The original stays
+# as it is, for the evidence and the PR. Uses sips (macOS) or ImageMagick.
+# SHRINK_MAX sets another long edge in pixels.
+#
+# Exit codes
+#   0  a path printed for every image
+#   1  no sips or ImageMagick: the originals' paths printed instead
+#   2  bad input
+set -uo pipefail
+
+max=${SHRINK_MAX:-1024}
+[ $# -gt 0 ] || { echo "usage: shrink <image>..."; exit 2; }
+out=$(mktemp -d "${TMPDIR:-/tmp}/shrink-XXXXXX")
+status=0 i=0
+for f in "$@"; do
+  [ -f "$f" ] || { echo "shrink: no file $f"; exit 2; }
+  i=$((i + 1)); dest="$out/$i-$(basename "$f")"
+  if command -v sips >/dev/null; then
+    read -r w h < <(sips -g pixelWidth -g pixelHeight "$f" 2>/dev/null | awk '/pixelWidth/{w=$2} /pixelHeight/{h=$2} END{print w+0, h+0}')
+    if [ "$w" -le "$max" ] && [ "$h" -le "$max" ]; then echo "$f"; continue; fi
+    sips -Z "$max" "$f" --out "$dest" >/dev/null 2>&1 && { echo "$dest"; continue; }
+  elif command -v magick >/dev/null; then
+    magick "$f" -resize "${max}x${max}>" "$dest" && { echo "$dest"; continue; }
+  elif command -v convert >/dev/null; then
+    convert "$f" -resize "${max}x${max}>" "$dest" && { echo "$dest"; continue; }
+  fi
+  echo "$f"; status=1
+done
+[ "$status" = 0 ] || echo "shrink: could not scale every image (no sips or ImageMagick); view the originals" >&2
+exit $status

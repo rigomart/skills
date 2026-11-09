@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# ship-context: print what shipping needs to know about the repo, in one call.
+#
+#   ship-context
+#
+# Run from inside the repo. Prints, under one heading each: the branch and
+# worktree, the working tree's status, the default branch, the commits ahead
+# of it, the last 20 commits, the PR template, CONTRIBUTING.md, the commands
+# CI runs, the package scripts and the open PR for this branch. A section with
+# nothing to show says "none".
+#
+# Exit codes
+#   0  printed
+#   2  not inside a git repo
+set -uo pipefail
+
+top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "ship-context: not inside a git repo"; exit 2; }
+cd "$top" || exit 2
+
+section() { printf '\n== %s\n' "$1"; }
+or_none() { local out; out=$(cat); [ -n "$out" ] && printf '%s\n' "$out" || echo "none"; }
+
+branch=$(git branch --show-current)
+section "branch"
+echo "${branch:-detached HEAD at $(git rev-parse --short HEAD)}"
+echo "toplevel: $top"
+if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then echo "worktree: yes"; else echo "worktree: no"; fi
+
+section "status"
+git status --short | or_none
+
+default=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name 2>/dev/null)
+[ -n "$default" ] || default=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||')
+[ -n "$default" ] || for b in main master; do git rev-parse -q --verify "origin/$b" >/dev/null && { default=$b; break; }; done
+section "default branch"
+echo "${default:-unknown}"
+
+section "ahead of origin/${default:-?}"
+if [ -n "$default" ] && git rev-parse -q --verify "origin/$default" >/dev/null; then
+  git log --oneline "origin/$default..HEAD" | or_none
+else
+  echo "unknown: no origin/${default:-<default>}"
+fi
+
+section "last 20 commits"
+git log --oneline -20 | or_none
+
+section "PR template"
+tpl=$(find .github docs . -maxdepth 2 -iname 'pull_request_template*.md' -not -path './node_modules/*' 2>/dev/null | head -1)
+[ -n "$tpl" ] || tpl=$(find .github/PULL_REQUEST_TEMPLATE -name '*.md' 2>/dev/null | head -1)
+if [ -n "$tpl" ]; then echo "$tpl:"; cat "$tpl"; else echo "none"; fi
+
+section "CONTRIBUTING.md"
+contrib=$(find . .github docs -maxdepth 1 -iname 'contributing.md' 2>/dev/null | head -1)
+if [ -z "$contrib" ]; then echo "none"
+elif [ "$(wc -l < "$contrib")" -le 150 ]; then echo "$contrib:"; cat "$contrib"
+else echo "$contrib: $(wc -l < "$contrib" | tr -d ' ') lines, too long to print; its headings:"; grep -E '^#' "$contrib"
+fi
+
+section "CI commands"
+found=""
+for wf in .github/workflows/*.yml .github/workflows/*.yaml; do
+  [ -f "$wf" ] || continue
+  found=1
+  echo "$wf:"
+  awk '
+    block && match($0, /^ */) && RLENGTH <= indent && NF { block = 0 }
+    block { sub(/^ +/, "    "); print; next }
+    /^[ -]*run: *[|>][-+]? *$/ { match($0, /^ */); indent = RLENGTH; block = 1; next }
+    /^[ -]*run: / { sub(/^[ -]*run: */, "  "); print }
+  ' "$wf"
+done
+for other in .gitlab-ci.yml .circleci/config.yml azure-pipelines.yml .buildkite/pipeline.yml Jenkinsfile; do
+  [ -f "$other" ] && { found=1; echo "$other: not parsed, read it"; }
+done
+[ -n "$found" ] || echo "none"
+
+section "package scripts"
+if [ -f package.json ] && command -v jq >/dev/null; then
+  jq -r '.scripts // {} | to_entries[] | "\(.key): \(.value)"' package.json | or_none
+else
+  echo "none"
+fi
+
+section "open PR for this branch"
+if [ -n "$branch" ]; then
+  gh pr view "$branch" --json number,url,state,baseRefName,isDraft \
+    --jq '"#\(.number) \(.url) \(.state | ascii_downcase) into \(.baseRefName)\(if .isDraft then ", draft" else "" end)"' 2>/dev/null | or_none
+else
+  echo "none"
+fi
+
+exit 0

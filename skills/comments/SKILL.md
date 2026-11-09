@@ -9,11 +9,15 @@ A comment earns its place only when it says something the code cannot: a reason 
 
 ## 1. Scope
 
-The comments the change added or edited: the caller's files or diff, or else everything the branch changes against the default branch: `git diff $(git merge-base HEAD origin/<default>)` for tracked files, working tree included, plus the new files `git ls-files --others --exclude-standard` lists, every line of which is added. Comments on lines the change did not touch stay out, except one the change made false.
+The comments the change added or edited: the caller's files, or else everything the branch changes against the default branch, working tree and new files included. Comments on lines the change did not touch stay out, except one the change made false.
+
+Run [scripts/scope](scripts/scope) by its absolute path from inside the repo, with the caller's files as arguments when it named them, and `--base <ref>` when the caller gave a diff's base. It writes the change's diff, with whole functions as context and new files whole, to a scope file, and prints its path and how many added or edited comment lines it holds.
+
+When it counts no comment lines, skip the checker: read the scope file yourself for a comment the change made false, and go to **Apply**.
 
 ## 2. Check
 
-Spawn one read-only Checker subagent, with its model set by the `subagents` skill (your session's model if that skill is not installed). Its prompt is [references/checker.md](references/checker.md), verbatim, followed by the scope: the repo path, the base ref, and the file list with new untracked files marked as new.
+Spawn one read-only Checker subagent, with its model set by the `subagents` skill (your session's model if that skill is not installed). Its prompt is [references/checker.md](references/checker.md), verbatim, followed by the repo path and the scope file's path.
 
 Without a subagent tool, apply `references/checker.md` yourself, comment by comment, and say in the report that no independent checker ran.
 
@@ -23,7 +27,7 @@ Read `references/checker.md` so you judge by the same rules. Then go through eve
 
 - **Reject** a finding outside the scope, one that deletes something on the keep list, one that changes code that is not a comment, and one whose reason misstates the comment or the code.
 - **Verify constraint claims.** For each `encode` finding, read the code the comment guards and confirm the claim is true today. A false claim becomes a `delete`.
-- **Look for misses.** Skim the scoped diff for comments the checker passed over, lint suppressions especially, and judge them by the same rules.
+- **Look for misses.** Skim the scope file for comments the checker passed over, lint suppressions especially, and judge them by the same rules.
 
 If more than a few findings fail the check, rerun the checker once with the failures named. If its second report fails too, apply the findings that passed and report the rest as open.
 

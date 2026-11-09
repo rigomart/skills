@@ -7,13 +7,9 @@ description: Branch, commit, push and open a PR or a stack in the project's conv
 
 ## Read the project first
 
-Before shipping, learn the project's own rules and follow them over the defaults here:
+Before shipping, run [scripts/ship-context](scripts/ship-context) by its absolute path from inside the repo. In one call it prints the branch and worktree, the working tree's status, the default branch (this skill calls it `main`), the commits ahead of it, the last 20 commits (the commit convention in use), the PR template, `CONTRIBUTING.md`, the commands CI runs, the package scripts and the branch's open PR. Read a file it points at only when it says to.
 
-- `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`: commit style, PR rules, required checks, anything they ask you to surface in a PR.
-- A PR template, under `.github/` or at the root.
-- `git log --oneline -20`: the commit convention actually in use.
-- The CI workflows (`.github/workflows/*.yml` or the project's CI config): the commands a PR must pass.
-- The default branch: `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`. This skill calls it `main`.
+Follow the project's rules over the defaults here: those in that output and in the agent instructions (`AGENTS.md`, `CLAUDE.md`), such as commit style, PR rules, required checks and anything they ask you to surface in a PR. Agent instructions already in your context need no second read.
 
 ## Branch Naming
 
@@ -27,14 +23,6 @@ items-inline-editing-135
 ```
 
 ## Branch Creation
-
-First inspect the current branch and worktree state:
-
-```bash
-git status --short
-git branch --show-current
-git rev-parse --show-toplevel
-```
 
 When working in a worktree, do not assume the branch should be based on `main`. Treat the checked-out worktree branch as the base unless the user explicitly asks to rebase, retarget, or start over from `main`.
 

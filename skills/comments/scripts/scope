@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# scope: write a change's comment-check scope to a file and count its comments.
+#
+#   scope [--base <ref>] [<path>...]
+#
+# Run from inside the repo. The base defaults to where the branch left the
+# default branch (git merge-base HEAD origin/<default>); the working tree is
+# included. With paths, only those files. Writes one file holding the diff of
+# each changed tracked file against the base, with whole functions and 5 lines
+# around each change as context, and every line of each new untracked file.
+# Lockfiles, prose (.md, .mdx, .txt) and binary files are left out. Prints:
+#
+#   scope: <file>
+#   base: <sha>, <n> files, <m> added or edited comment lines
+#
+# then one line per file. The comment count is a heuristic that leans toward
+# counting: a line that might be a comment counts.
+#
+# Exit codes
+#   0  the scope was written
+#   2  not inside a git repo, a bad base, or nothing changed
+set -uo pipefail
+
+usage="usage: scope [--base <ref>] [<path>...]"
+base="" paths=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --base) [ -n "${2:-}" ] || { echo "scope: $usage"; exit 2; }; base=$2; shift 2 ;;
+    -h|--help) echo "$usage"; exit 0 ;;
+    *) paths+=("$1"); shift ;;
+  esac
+done
+top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "scope: not inside a git repo"; exit 2; }
+cd "$top" || exit 2
+
+if [ -z "$base" ]; then
+  default=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null)
+  [ -n "$default" ] || for b in origin/main origin/master main master; do
+    git rev-parse -q --verify "$b" >/dev/null && { default=$b; break; }
+  done
+  [ -n "$default" ] || { echo "scope: no default branch found; pass --base <ref>"; exit 2; }
+  base=$(git merge-base HEAD "$default") || { echo "scope: no merge base with $default; pass --base <ref>"; exit 2; }
+fi
+base=$(git rev-parse -q --verify "$base^{commit}") || { echo "scope: bad base"; exit 2; }
+
+skip='(^|/)(package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|bun\.lockb?|Cargo\.lock|Gemfile\.lock|poetry\.lock|uv\.lock|composer\.lock|go\.sum)$|\.(md|mdx|txt|png|jpe?g|gif|webp|ico|pdf|svg|woff2?)$'
+tracked=$(git diff --name-only --diff-filter=d "$base" -- ${paths[@]+"${paths[@]}"} | grep -Ev "$skip")
+untracked=$(git ls-files --others --exclude-standard -- ${paths[@]+"${paths[@]}"} | grep -Ev "$skip")
+[ -n "$tracked$untracked" ] || { echo "scope: no changed files against $(git rev-parse --short "$base")"; exit 2; }
+
+out=$(mktemp "${TMPDIR:-/tmp}/comment-scope-XXXXXX")
+{
+  echo "# Comment-check scope: diff against base $base, working tree included."
+  echo "# Lines starting with + were added or edited; new files are shown whole, every line added."
+  for f in $tracked; do
+    git diff -W -U5 "$base" -- "$f" | grep -v '^Binary files'
+  done
+  for f in $untracked; do
+    grep -Iq . "$f" 2>/dev/null || continue
+    printf 'diff --git a/%s b/%s\nnew file\n+++ b/%s\n' "$f" "$f" "$f"
+    sed 's/^/+/' "$f"
+  done
+} > "$out"
+
+comment='^[[:space:]]*(//|/\*|\*|#|--|<!--|;|"""|'"'''"')|[^:"'"'"'[:space:]][[:space:]]+(//|#|--)[[:space:]]'
+count=$(grep '^+' "$out" | grep -v '^+++ ' | sed 's/^+//' | grep -Ec "$comment")
+files=$(printf '%s\n%s\n' "$tracked" "$untracked" | grep -c .)
+
+echo "scope: $out"
+echo "base: $(git rev-parse --short "$base"), $files files, $count added or edited comment lines"
+for f in $tracked; do echo "  $f"; done
+for f in $untracked; do echo "  $f (new)"; done
