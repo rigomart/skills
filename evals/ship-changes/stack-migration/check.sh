@@ -9,6 +9,9 @@ top=$(new_prs | jq -r --arg b "$bhead" 'select(.base==$b) | .number' | head -1)
 [ -n "$top" ] || { fail top_targets_bottom "no PR targets $bhead"; exit 0; }
 pass top_targets_bottom
 thead=$(pr_field "$top" .head)
+check_ran ran_stack_ready 'stack-ready'
+expect linked_as_stack "stacks on GitHub: $(jq -c '[.stacks[]?.prs]' "$EVAL_GH_STATE/state.json")" \
+  jq -e --argjson b "$bottom" --argjson t "$top" 'any(.stacks[]?; .prs == [$b, $t])' "$EVAL_GH_STATE/state.json"
 expect top_branched_from_bottom "$thead does not contain $bhead" git -C "$REMOTE" merge-base --is-ancestor "$bhead" "$thead"
 expect bottom_has_migration "migrations/v2-due-dates.mjs missing at $bhead" git -C "$REMOTE" cat-file -e "$bhead:migrations/v2-due-dates.mjs"
 if git -C "$REMOTE" show "$bhead:src/cli.mjs" | grep -q -- '--due'; then fail bottom_excludes_feature "the --due flag is in the bottom PR"; else pass bottom_excludes_feature; fi
