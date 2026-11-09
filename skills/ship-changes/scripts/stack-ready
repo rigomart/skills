@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# stack-ready: say whether a stack can be a GitHub stacked PR chain, driven by
+# the github/gh-stack extension, in one line. Installs the extension when gh
+# has no `stack` command yet.
+#
+#   stack-ready [--repo owner/name]
+#
+# Without --repo, gh uses the current checkout.
+#
+# Exit codes
+#   0  native: the extension is installed and the repository has stacked PRs on
+#   1  manual: no native stack (another extension owns `gh stack`, the install
+#      failed, or the repository has stacked PRs off); the line says which
+#   2  bad input, gh is missing, or the repository cannot be read
+set -uo pipefail
+
+usage="usage: stack-ready [--repo owner/name]"
+repo=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --repo) [ -n "${2:-}" ] || { echo "stack-ready: $usage"; exit 2; }; repo="$2"; shift 2 ;;
+    *) echo "stack-ready: unknown argument '$1'. $usage"; exit 2 ;;
+  esac
+done
+
+command -v gh >/dev/null 2>&1 || { echo "stack-ready: gh is not installed"; exit 2; }
+repo="${repo:-$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)}"
+[ -n "$repo" ] && gh api "repos/$repo" --silent >/dev/null 2>&1 \
+  || { echo "stack-ready: cannot read the repository ${repo:-of this checkout}; pass --repo owner/name"; exit 2; }
+
+# `gh extension list` prints: gh stack<TAB>github/gh-stack<TAB>v0.3.0
+ext=$(gh extension list 2>/dev/null | awk -F'\t' '$1 == "gh stack" { print $2 "\t" $3 }')
+source=${ext%%$'\t'*}
+if [ -z "$ext" ]; then
+  if ! out=$(gh extension install github/gh-stack 2>&1); then
+    echo "manual: installing github/gh-stack failed: $(printf '%s' "$out" | tail -1)"; exit 1
+  fi
+  ext=$(gh extension list 2>/dev/null | awk -F'\t' '$1 == "gh stack" { print $2 "\t" $3 }')
+  source=${ext%%$'\t'*}
+  installed=" (installed now)"
+elif [ "$source" != "github/gh-stack" ]; then
+  echo "manual: \`gh stack\` comes from $source, not github/gh-stack; leaving it in place"; exit 1
+fi
+[ "$source" = "github/gh-stack" ] || { echo "manual: github/gh-stack did not install"; exit 1; }
+version=${ext#*$'\t'}
+
+if ! out=$(gh api "repos/$repo/stacks" --silent 2>&1); then
+  case "$out" in
+    *"HTTP 404"*) echo "manual: stacked PRs are off in $repo"; exit 1 ;;
+    *) echo "stack-ready: cannot read stacks in $repo: $(printf '%s' "$out" | tail -1)"; exit 2 ;;
+  esac
+fi
+echo "native: github/gh-stack $version${installed:-}, stacked PRs on in $repo"

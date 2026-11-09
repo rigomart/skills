@@ -7,7 +7,7 @@ You own the queue: what runs, when, and what reaches the user. Each item's owner
    - **prototype**: the `build` playbook would prototype it (a redesign, a new logo, "options" or "directions"). Hands back variants on a local branch.
    - **research**: a review, audit, proposal or question the `research` playbook fits. Hands back its report.
 
-   Only a change opens a PR. A prototype or research item pushes nothing until the user picks; the pick then makes it a change. Two changes that would edit the same lines, or where one builds on the other, go to one owner as one PR, or the second waits for the first to merge. Items that only share a file, each adding its own line to a router or its own test to a test file, run at once: the second to merge resolves a one-line conflict. Done when every item has a kind and is kept, joined to another, queued behind one, or dropped with a reason.
+   Only a change opens a PR. A prototype or research item pushes nothing until the user picks; the pick then makes it a change. Two changes that would edit the same lines go to one owner as one PR, or the second waits for the first to merge. Changes where one builds on the other go to one owner, who ships them as one PR or a stack, as the `ship-changes` skill decides. Items that only share a file, each adding its own line to a router or its own test to a test file, run at once: the second to merge resolves a one-line conflict. Done when every item has a kind and is kept, joined to another, queued behind one, or dropped with a reason.
 2. Write the ledger. From here on, update it on every event before you reply, and answer status questions from it, not from memory.
 3. Ask once, numbered, recommendation first, every question the `implement` skill says to ask, across all items. Items no answer blocks don't wait for it.
 4. Fetch, then start one owner per item, each in its own worktree from the latest default branch, with the **Owner brief** for its kind and the role and model the `subagents` skill gives it. Start each wave at once, within that skill's limits on agents running at once.
@@ -33,7 +33,7 @@ Fill in each `<...>`:
 
 ```text
 <The item as a user would ask for it, with what it hands back.
- change: "Fix #12 (<url>) and open a PR against <default>."
+ change: "Fix #12 (<url>) and open a PR against <default>." Joined items: "Fix #7, #8 and #9 (<urls>) and open one PR, or a stack when they split."
  prototype: "Prototype directions for #20 (<url>). Commit them on a local branch; push nothing and open no PR until I pick."
  research: "Review <topic> and recommend. Report back; write no tracked doc, push nothing, open no PR.">
 

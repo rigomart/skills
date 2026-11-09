@@ -34,7 +34,7 @@ const VALUE_FLAGS = new Set(["--json", "--jq", "-q", "--template", "-t", "--titl
   "-R", "--repo", "-X", "--method", "-f", "--raw-field", "--field", "-m", "--milestone",
   "--remove-label", "--interval", "-i", "--author", "-A"]);
 for (const f of ["--parent", "--blocked-by", "--blocking", "--add-blocked-by", "--add-blocking", "--type", "--project", "--add-project",
-  "--remove-project", "--sort", "--order", "--match", "--owner"]) VALUE_FLAGS.add(f);
+  "--remove-project", "--sort", "--order", "--match", "--owner", "--remote", "--merge-method", "--message"]) VALUE_FLAGS.add(f);
 
 function parse(args) {
   const flags = {}; const pos = [];
@@ -457,6 +457,114 @@ if (state.ci) {
   }
 }
 
+// state.local_stack is the clone's tracked stack {trunk, branches}; state.stacks are the GitHub stacks {number, prs}; gh stack needs github/gh-stack in state.extensions.
+state.extensions = state.extensions || [];
+state.stacks = state.stacks || [];
+const stacksOn = () => state.stacks_enabled !== false;
+const stackOf = (n) => state.stacks.find((s) => s.prs.includes(n));
+if (group === "extension") {
+  if (sub === "list" || sub === "ls") finish(0, state.extensions.map((e) => `gh ${e.split("/")[1].replace(/^gh-/, "")}\t${e}\tv0.3.0`).join("\n"));
+  if (sub === "install") {
+    if (p.pos[0] !== "github/gh-stack") finish(1, "", `fake-gh: only github/gh-stack can be installed here`);
+    if (!state.extensions.includes(p.pos[0])) state.extensions.push(p.pos[0]);
+    finish(0, "", "✓ Installed extension github/gh-stack");
+  }
+}
+if (group === "stack") {
+  if (!state.extensions.includes("github/gh-stack")) finish(1, "", `unknown command "stack" for "gh"`);
+  const trunk = repo.default_branch;
+  const exists = (b) => git("rev-parse", "--verify", "-q", `refs/heads/${b}`) !== "";
+  const pushAll = (bs) => {
+    const r = spawnSync("git", ["push", "-q", "--force-with-lease", "origin", ...bs.map((b) => `${b}:refs/heads/${b}`)], { encoding: "utf8" });
+    if (r.status !== 0) finish(1, "", `✗ push failed\n${r.stderr}`);
+  };
+  const requireLocal = () => { if (!state.local_stack) finish(2, "", `✗ current branch "${currentBranch()}" is not part of a stack`); return state.local_stack; };
+  const linkPrs = (prs, open) => {
+    prs.forEach((pr, i) => { pr.base = i === 0 ? (p.get("--base") || trunk) : prs[i - 1].head; if (open) pr.draft = false; });
+    if (prs.length < 2) return "";
+    if (!stacksOn()) finish(9, "", "✗ Stacked PRs are not enabled for this repository");
+    let st = prs.map((x) => stackOf(x.number)).find(Boolean);
+    if (!st) { st = { number: state.next_pr++, prs: [] }; state.stacks.push(st); }
+    for (const pr of prs) if (!st.prs.includes(pr.number)) st.prs.push(pr.number);
+    return `✓ Stack #${st.number}: ${st.prs.map((n) => "#" + n).join(" <- ")}\n${prs.map((x) => prUrl(x.number)).join("\n")}`;
+  };
+  const prFor = (b, open) => {
+    let pr = state.prs.find((x) => x.head === b && x.state === "OPEN");
+    if (!pr) {
+      pr = { number: state.next_pr++, title: git("log", "-1", "--format=%s", b), body: "", base: trunk, head: b,
+        headRefOid: remoteHead(b), draft: !open, state: "OPEN", attachments: [] };
+      state.prs.push(pr);
+    }
+    return pr;
+  };
+  switch (sub) {
+    case "init": {
+      if (!p.pos.length) finish(5, "", "✗ branch names are required when not running interactively");
+      let prev = p.get("--base", "-b") || trunk;
+      for (const b of p.pos) { if (!exists(b)) git("branch", b, prev); prev = b; }
+      state.local_stack = { trunk: p.get("--base", "-b") || trunk, branches: [...p.pos] };
+      git("checkout", "-q", p.pos[p.pos.length - 1]);
+      finish(0, "", `✓ Stack initialized: (${state.local_stack.trunk}) <- ${p.pos.join(" <- ")}`);
+    }
+    case "add": {
+      const ls = requireLocal();
+      const b = p.pos[0];
+      if (!b) finish(5, "", "✗ a branch name is required when not running interactively");
+      if (git("rev-parse", "--verify", "-q", `refs/heads/${b}`) !== "") finish(1, "", `✗ branch ${b} already exists`);
+      spawnSync("git", ["checkout", "-q", "-b", b], { encoding: "utf8" });
+      if (p.has("-A", "--all")) git("add", "-A"); else if (p.has("-u", "--update")) git("add", "-u");
+      const msg = p.get("-m", "--message"); if (msg) spawnSync("git", ["commit", "-q", "-m", msg], { encoding: "utf8" });
+      ls.branches.push(b);
+      finish(0, "", `✓ Added ${b} to the stack`);
+    }
+    case "push": { const ls = requireLocal(); pushAll(ls.branches); finish(0, "", `✓ Pushed ${ls.branches.length} branches`); }
+    case "submit": {
+      const ls = requireLocal();
+      if (!p.has("--auto")) finish(1, "", "✗ the submit editor needs an interactive terminal; pass --auto");
+      pushAll(ls.branches);
+      finish(0, linkPrs(ls.branches.map((b) => prFor(b, p.has("--open"))), p.has("--open")));
+    }
+    case "link": {
+      if (p.pos.length < 2) finish(5, "", "✗ link needs at least two branches or PRs, bottom first");
+      const branches = p.pos.filter((a) => !/^#?\d+$/.test(a) && !a.includes("/pull/"));
+      if (branches.length) pushAll(branches);
+      const prs = p.pos.map((a) => (/^#?\d+$/.test(a) || a.includes("/pull/")) ? findPr(a) : prFor(a, p.has("--open")));
+      if (prs.some((x) => !x)) finish(4, "", "✗ a PR in the list does not exist");
+      finish(0, linkPrs(prs, p.has("--open")));
+    }
+    case "view": {
+      const ls = requireLocal();
+      const cur = currentBranch();
+      const v = { trunk: ls.trunk, currentBranch: cur, branches: ls.branches.map((b) => {
+        const pr = state.prs.find((x) => x.head === b && x.state !== "CLOSED");
+        return { name: b, head: git("rev-parse", b), base: "", isCurrent: b === cur, isMerged: !!pr && pr.state === "MERGED",
+          isQueued: false, needsRebase: false, ...(pr ? { pr: { number: pr.number, url: prUrl(pr.number), state: pr.state } } : {}) };
+      }) };
+      if (p.has("--json")) finish(0, JSON.stringify(v, null, 2));
+      finish(0, `(${ls.trunk}) <- ${ls.branches.join(" <- ")}`);
+    }
+    case "rebase": case "sync": { requireLocal(); finish(0, "", sub === "sync" ? "✓ Stack synced" : "✓ Stack rebased"); }
+    case "merge": {
+      const target = p.pos[0] ? findPr(p.pos[0]) || null : findPr();
+      const st = target ? stackOf(target.number) : state.stacks.find((s) => s.number === Number(p.pos[0]));
+      if (!st) finish(2, "", "✗ no stack found for that PR or stack number");
+      if (!p.has("--yes", "-y")) finish(1, "", "✗ the merge wizard needs an interactive terminal; pass --yes");
+      const upto = target ? st.prs.indexOf(target.number) : st.prs.length - 1;
+      const batch = st.prs.slice(0, upto + 1).map((n) => state.prs.find((x) => x.number === n)).filter((x) => x.state === "OPEN");
+      for (const pr of batch) {
+        if (pr.draft) finish(1, "", `✗ #${pr.number} is a draft`);
+        if ((state.required_checks || []).length && !checksDone(pr))
+          finish(1, "", `✗ Merge failed: #${pr.number} does not meet its merge requirements: required status checks have not passed. Nothing was merged.`);
+      }
+      for (const pr of batch) { pr.base = trunk; land(pr); }
+      const next = st.prs.map((n) => state.prs.find((x) => x.number === n)).find((x) => x.state === "OPEN");
+      if (next) next.base = trunk;
+      finish(0, `✓ Merged ${batch.map((x) => "#" + x.number).join(", ")} into ${trunk}`);
+    }
+  }
+  finish(1, "", `fake-gh: unsupported command "gh ${argv.join(" ")}"`);
+}
+
 switch (group) {
   case "auth":
     if (sub === "status") finish(0, "github.com\n  ✓ Logged in to github.com account eval-bot (keyring)\n  - Token scopes: 'repo', 'workflow'");
@@ -492,6 +600,10 @@ switch (group) {
       if (!req.length) finish(1, "", "gh: Branch not protected (HTTP 404)");
       v = { required_status_checks: { strict: false, contexts: req } };
     } else if (ep.startsWith(`${base}/rules/branches/`)) v = [];
+    else if (ep === `${base}/stacks`) {
+      if (!stacksOn()) finish(1, "", "gh: Not Found (HTTP 404)");
+      v = state.stacks.map((st) => ({ number: st.number, base: { ref: repo.default_branch }, pull_requests: st.prs.map((n) => ({ number: n })) }));
+    }
     else if (ep === `${base}/pulls`) v = state.prs.filter((x) => x.state === "OPEN").map((x) => ({ number: x.number, title: x.title, head: { ref: x.head }, base: { ref: x.base }, html_url: prUrl(x.number), draft: !!x.draft }));
     else finish(1, "", `gh: Not Found (HTTP 404)`);
     const jq = pa.get("--jq", "-q");
@@ -644,6 +756,8 @@ switch (group) {
         if (!method) finish(1, "", "--merge, --rebase, or --squash required when not running interactively");
         if (p.has("--disable-auto")) { pr.autoMerge = null; finish(0, `✓ Auto-merge disabled for pull request ${repo.nameWithOwner}#${pr.number}`); }
         if (pr.state !== "OPEN") finish(1, "", `Pull request ${repo.nameWithOwner}#${pr.number} was already merged`);
+        if (stackOf(pr.number) && p.has("--auto")) finish(1, "", `GraphQL: Auto-merge is not available for pull requests in a stack (enablePullRequestAutoMerge)`);
+        if (stackOf(pr.number) && pr.base !== repo.default_branch) finish(1, "", `X Pull request ${repo.nameWithOwner}#${pr.number} is in a stack; merge it with \`gh stack merge ${pr.number}\``);
         const protectedBase = pr.base === repo.default_branch && (state.required_checks || []).length > 0;
         if (p.has("--auto")) {
           if (!repo.allow_auto_merge) finish(1, "", "GraphQL: Auto merge is not allowed for this repository (enablePullRequestAutoMerge)");
