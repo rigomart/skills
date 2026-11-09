@@ -5,7 +5,7 @@ Runs a skill's scenarios headless on a chosen model and reports how often each c
 ```bash
 evals/run.sh ship-changes                                   # its floor, 3 runs per scenario
 evals/run.sh ship-changes --model claude-opus-5-5 --effort high
-evals/run.sh ship-changes --only land-armed --runs 5
+evals/run.sh ship-changes --only stack-migration --runs 5
 ```
 
 Results land in `evals/results/<skill>/<timestamp>-<model>-<effort>/` (gitignored): `summary.md`, and per run the transcript, the fake `gh` state and calls, the git graph and `checks.txt`. Each run's working directory stays in `$TMPDIR`; its path is in `workdir`. The summary's heading names the model and effort, and says `(floor)` when they are the skill's floor.

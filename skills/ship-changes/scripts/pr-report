@@ -5,7 +5,7 @@
 #
 # <pr> is a PR's number (7, #7), URL or branch; the current branch's PR when
 # none is given. Give a stack's PRs bottom first. Each line:
-#   - <url> (<title>): <head> at <sha> into <base>, <state>, auto-merge <off | armed>
+#   - <url> (<title>): <head> at <sha> into <base>, <state>
 #
 # Exit codes
 #   0  every PR was read
@@ -26,10 +26,9 @@ done
 
 status=0
 for pr in "${prs[@]}"; do
-  line=$(gh pr view ${pr:+"$pr"} ${repo[@]+"${repo[@]}"} --json url,title,headRefName,headRefOid,baseRefName,state,isDraft,autoMergeRequest --jq '
+  line=$(gh pr view ${pr:+"$pr"} ${repo[@]+"${repo[@]}"} --json url,title,headRefName,headRefOid,baseRefName,state,isDraft --jq '
     "- \(.url) (\(.title)): \(.headRefName) at \(.headRefOid[0:7]) into \(.baseRefName), "
-    + (if .state == "OPEN" then (if .isDraft then "draft" else "open" end) else (.state | ascii_downcase) end)
-    + ", auto-merge " + (if .autoMergeRequest then "armed" else "off" end)' 2>&1)
+    + (if .state == "OPEN" then (if .isDraft then "draft" else "open" end) else (.state | ascii_downcase) end)' 2>&1)
   if [ $? -eq 0 ] && [ -n "$line" ]; then echo "$line"; else echo "- ${pr:-current branch}: cannot read PR: ${line:-no output}"; status=2; fi
 done
 exit $status

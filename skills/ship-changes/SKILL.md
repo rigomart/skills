@@ -1,6 +1,6 @@
 ---
 name: ship-changes
-description: Branch, commit, push and open a PR or a stack in the project's conventions, then land it. Use when asked to ship, commit, push, open or land a PR, or prepare work for review.
+description: Branch, commit, push and open a PR or a stack in the project's conventions. Use when asked to ship, commit, push or open a PR, or prepare work for review.
 ---
 
 # Ship Changes
@@ -110,10 +110,6 @@ Take, check, and attach them as [references/screenshots.md](references/screensho
 
 Work tied to an issue ends the body with `Closes #123`; take the number from the request, the branch name or the commits. When an issue seems to exist but you can't find its number, ask before opening the PR.
 
-## Landing
-
-Opening a PR does not merge it. Land only when the user asks to merge or land it; "ship it" asks for the PR. When asked, follow [references/landing.md](references/landing.md), or [references/stack.md](references/stack.md) for a stack.
-
 ## Report
 
-Run [scripts/pr-report](scripts/pr-report) by its absolute path with each PR you opened or landed, a stack's bottom PR first, and put the lines it prints in the reply, as printed: at its top, or where the report of the skill that called this one puts the PR link. Each line gives a PR's link, branch, head and whether auto-merge is armed; a PR named only by its number (`#12`) has no link. Then say which images are attached, or why a visible change has none.
+Run [scripts/pr-report](scripts/pr-report) by its absolute path with each PR you opened, a stack's bottom PR first, and put the lines it prints in the reply, as printed: at its top, or where the report of the skill that called this one puts the PR link. Each line gives a PR's link, branch, head and state; a PR named only by its number (`#12`) has no link. Then say which images are attached, or why a visible change has none.

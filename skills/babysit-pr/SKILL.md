@@ -5,7 +5,7 @@ description: Watch a pull request until its checks pass, fix the failures its ow
 
 # Babysit PR
 
-A PR is done when its checks are green on the latest head and it does not conflict with its base. The user owns the merge: they review the final diff on GitHub, so a green PR goes back to them with its link. Merging goes through the `ship-changes` skill.
+A PR is done when its checks are green on the latest head and it does not conflict with its base. The user owns the merge: they review the final diff on GitHub, so a green PR goes back to them with its link.
 
 ## Find the PR
 
